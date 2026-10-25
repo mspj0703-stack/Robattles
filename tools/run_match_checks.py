@@ -23,7 +23,9 @@ def main():
     for name,cmd in groups:
         result=subprocess.run(cmd,cwd=ROOT,capture_output=True,text=True)
         (target/(name+'.txt')).write_text(result.stdout+result.stderr)
-        print(name,'PASS' if result.returncode==0 else 'FAIL',flush=True)
+        label='PASS' if result.returncode==0 else 'FAIL'
+        if name.startswith('sim_legacy') and result.returncode==0 and 'failed 0 ' not in result.stdout: label='NO-NEW-FAILURES (preserved suite still has known stale failures)'
+        print(name,label,flush=True)
         if name.startswith('sim_legacy'):  # never hide the preserved suite's real failures: print its own summary lines
             print('   '+'\n   '.join(l for l in result.stdout.splitlines() if l.startswith(('SIM LEGACY','  known stale'))),flush=True)
         if result.returncode:failures.append(name)
