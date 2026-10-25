@@ -168,3 +168,20 @@
 
 ## A75. 클라이언트 볼 표현
 - 서버가 BallSpawn/BallBounce/BallMode/BallEnd 이벤트로 위치·속도·모드를 알리고, 클라이언트는 그 사이를 보간만 한다(판정은 서버). 모든 BallSpawn 은 BallEnd 와 짝을 이룬다(테스트).
+
+## A76. 폭발 감쇠 프로필 (TIMEBOMB 확정 사양) — 기존 A07 은 그대로 유지
+- 확정: 같은 공격자의 폭발이 같은 대상에 0.3초 안에 반복되면 100% → 60% → 30%(이후 30% 유지). **TIMEBOMB 폭발(`explosionProfile = "Timebomb"`)에만** 적용한다. 다른 캐릭터의 폭발(PAINTBALL Color Bomb 등)은 기존 A07(0.5배·최소 0.25·1.5초)을 그대로 쓰고, 빔·직접·투사체·근접 다단 히트(Color Break, Blade Storm 등)는 `kind="Explosion"` 이 아니라서 어느 감쇠도 받지 않는다.
+- 카운터는 공격자 × 프로필 × 대상별로 독립이다. 다른 플레이어의 폭발이나 다른 프로필과 공유하지 않는다. 각 폭발은 별도 attackId 의 유효 적중이어야 센다(피해가 실제로 적용된 경우에만 기록).
+- 새 이동 허가 `BlastGuard`(Blast Guard 자기 반동): maxSpeed 60·maxUp 20·maxDuration 0.5·재발급 1초(임시).
+- 폭발 반경/위치: 자기 체력 피해는 항상 면제. 벽·지형 차폐는 폭탄 중심 → 대상 시선(lineOfSight) 검사. 거리 감쇠: 일반 폭탄 없음(평탄), Big Bang 중심 70 → 가장자리 35 선형(표면 거리 기준).
+
+## A77. TIMEBOMB 임시 수치·해석
+- 확정은 Data/Characters.TIMEBOMB 머리 주석 참고. 임시: 폭발 반경(Timed 6·Cluster 6·자탄 4·Blast Guard 6), 투척 속도 45/40·중력 35, 자탄 개수 외 각도(pitch 50°)·속도 14·폭발 간격 0.35초(감쇠 창 0.3초 밖이라 자탄마다 100%), Blast Guard 반동 6스터드(0.25초)·넉백 40, Blast Jump 방향(조준 방향, 위쪽 성분 최소 0.5)·지속 0.5초, 설치 수명 30초(만료 시 폭발 없이 소멸), 던지기 간격 0.3초, 누르기 상한 10초, Big Bang 투척 속도 50(Blast Jump 3초 안 공중이면 75), 비행 한도 6초, 소유자당 동시 폭탄 상한 24.
+- Remote Bomb 입력: Press = 누르기 시작(비공격, 보호 유지), Release 시 누른 시간 < 0.4초면 설치(충전 1·설치 최대 2·던지기 간격 확인), ≥ 0.4초면 전체 기폭(설치물이 없으면 `nothing_to_detonate` 거부, 충전·쿨타임 소모 없음). 충전 복구는 사용한 충전마다 독립적으로 11초 뒤. 중복·지연 Release 는 `not_holding`, 10초 넘은 누르기는 `hold_expired`.
+- Chain Reaction: 자기 폭탄만, 반경 7스터드(폭탄 중심 기준), 최초 폭발 = 1단계 최대 3단계, 같은 폭탄 중복 기폭 없음, 단계 순(FIFO)·생성 순번으로 결정적. **자탄(Mini)과 Big Bang 은 연쇄 대상에서 제외**(자탄은 차례로 터지도록, Big Bang 은 3초 타이머 보호). 원격 전체 기폭과 타이머 만료는 각각 1단계 시작. Blast Guard·Blast Jump 의 폭발도 근처 자기 폭탄을 2단계로 연쇄 기폭한다(이 폭발 자체가 1단계).
+- Blast Jump 는 피해 없는 이동기(부활 보호 유지)로 처리한다(사양에 피해 언급 없음). 허가 거부·위가 막힌 경우 쿨타임 불변. Blast Guard 는 뒤가 벽이면 반동만 생략하고 폭발은 그대로 한다.
+- 폭탄은 플레이어를 통과한다(접촉 기폭 없음, 지형만 정지). 사망·리스폰·캐릭터 변경 시 설치물(원격 폭탄)과 누르기 상태를 정리하고, 이미 던진 Timed/Cluster/Big Bang 은 남아서 소유자 이름으로 폭발한다. 퇴장 시 전부 제거(폭발 없음).
+
+## A78. 클라이언트 폭탄 표현·수직 이동
+- 서버가 BombSpawn/BombLand/BombExplode/BombEnd 로 위치·시각을 알리고 클라이언트는 보간만 한다(모든 BombSpawn 은 종료 이벤트와 짝, 테스트).
+- Blast Jump 의 수직 성분은 dash.up 으로 전달하며 클라이언트는 허가 종류(BlastJump)의 maxUp 이하로만 적용한다(MovementModel.dashVelocity 의 8번째 인자). 허가 종류를 모르면 수직 이동 없음.

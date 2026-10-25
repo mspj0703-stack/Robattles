@@ -50,6 +50,12 @@ function HudModel.build(snap, now)
 				label = (s.name or "") .. " 돌진"
 			elseif s.state == "sliding" then
 				label = (s.name or "") .. " 이동 중"
+			elseif s.charges ~= nil then
+				-- 충전형(Remote Bomb): 남은 충전 / 설치 수, 충전이 없으면 다음 복구까지 시간
+				label = string.format("%s %d/%d 설치 %d", s.name or "", s.charges, s.maxCharges or 2, s.placed or 0)
+				if s.charges <= 0 then
+					label = label .. string.format(" (%.1fs)", rem)
+				end
 			elseif rem > 0 then
 				label = string.format("%s %.1fs", s.name or "", rem)
 			else
@@ -57,7 +63,7 @@ function HudModel.build(snap, now)
 			end
 			m.skills[i] = {
 				key = tostring(i), implemented = true, name = s.name, label = label, remaining = rem,
-				frac = total > 0 and math.clamp(rem / total, 0, 1) or 0, ready = rem <= 0 and s.state == nil, state = s.state,
+				frac = total > 0 and math.clamp(rem / total, 0, 1) or 0, ready = (s.charges ~= nil and s.charges > 0) or (s.charges == nil and rem <= 0 and s.state == nil), state = s.state,
 			}
 		else
 			m.skills[i] = { key = tostring(i), implemented = false, label = "미구현" }

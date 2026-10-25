@@ -193,4 +193,48 @@ Characters.SUPERBALL = {
 	passive = { id = "TrickMaster", reduceSeconds = 0.5, lockSeconds = 1 }, -- 확정
 }
 
+-- TIMEBOMB (Phase 2). 확정: HP 105, LMB 타이머 폭탄(약 1초 뒤 폭발·20·간격 약 1.2초), RMB Blast Guard(근처 적 10 + 넉백, 자기 반동 이동, 쿨 8),
+-- 스킬1 Cluster Bomb 18 + 자탄 4×8·쿨 13, 스킬2 Remote Bomb(설치 최대 2·충전 2·충전당 11초·28·반경 7; 짧게 누르면 던지기/설치, 0.4초 이상 누르고 떼면 전체 기폭, 기폭은 충전 소모 없음),
+-- 스킬3 Blast Jump(약 14스터드·공중 가능·쿨 9·BlastJump 이동 허가), 궁극기 Big Bang(착지 3초 뒤 폭발·반경 18·중심 70/가장자리 35·Blast Jump 후 공중에서 쓰면 더 멀리),
+-- 패시브 Chain Reaction(자기 폭탄 반경 7스터드 연쇄, 최초 폭발 포함 최대 3단계). 폭발 감쇠: 같은 공격자의 폭발이 같은 대상에 0.3초 안에 반복되면 100% → 60% → 30%.
+-- 임시(A76~A78): 폭발 반경(Timed 6·Cluster 6·자탄 4·Blast Guard 6), 투척 속도·중력, 자탄 각도·간격, Blast Guard 반동 거리/넉백, Blast Jump 방향/시간, 설치 수명, 기폭 입력 상한, Big Bang 비행 한도 등.
+Characters.TIMEBOMB = {
+	id = "TIMEBOMB",
+	displayName = "Timebomb",
+	maxHealth = 105, -- 확정
+	module = "Timebomb",
+	primary = {
+		kind = "Projectile", automatic = false, damage = 20, fireInterval = 1.2, fuse = 1.0, -- 확정(약)
+		radius = 6, falloffMin = 1, moveSpeedMult = 0.9, -- 임시
+		bomb = { speed = 45, gravity = 35, bombRadius = 0.4 },
+	},
+	secondary = {
+		id = "BlastGuard", name = "Blast Guard", kind = "Skill", cooldown = 8, damage = 10, -- 확정
+		radius = 6, knockback = 40, falloffMin = 1, -- 임시
+		recoil = { distance = 6, duration = 0.25, minDistance = 1, permit = "BlastGuard" }, -- 자기 반동 이동(임시): 조준 반대 수평 방향
+	},
+	skills = {
+		[1] = {
+			id = "ClusterBomb", name = "Cluster Bomb", kind = "Skill", cooldown = 13, damage = 18, -- 확정
+			fuse = 1.0, radius = 6, falloffMin = 1, bomb = { speed = 45, gravity = 35, bombRadius = 0.4 }, -- 임시
+			mini = { count = 4, damage = 8, radius = 4, fuse = 0.5, fuseStep = 0.35, speed = 14, pitchDeg = 50, gravity = 35 }, -- 개수·피해 확정, 나머지 임시. 간격 0.35초: 감쇠 창(0.3초) 밖이라 자탄마다 100%
+		},
+		[2] = {
+			id = "RemoteBomb", name = "Remote Bomb", kind = "Skill", damage = 28, radius = 7, falloffMin = 1, -- 확정
+			maxPlaced = 2, charges = 2, rechargeSeconds = 11, holdSeconds = 0.4, -- 확정
+			throwInterval = 0.3, placedLifetime = 30, maxHoldSeconds = 10, bomb = { speed = 40, gravity = 35, bombRadius = 0.4 }, -- 임시
+		},
+		[3] = {
+			id = "BlastJump", name = "Blast Jump", kind = "Movement", cooldown = 9, -- 확정
+			distance = 14, duration = 0.5, minDistance = 2, minUp = 0.5, permit = "BlastJump", -- 14 확정, 나머지 임시. 판정(피해) 없음: 폭발은 연쇄 반응만 유발
+		},
+	},
+	ultimate = {
+		id = "BigBang", name = "Big Bang", kind = "Ultimate", duration = 1.0, -- duration: 발동 표시 시간(임시)
+		damage = 70, edgeDamage = 35, radius = 18, fuseAfterLand = 3, -- 확정
+		speed = 50, airSpeed = 75, airWindow = 3, gravity = 30, flightLimit = 6, bombRadius = 0.6, -- 임시
+	},
+	passive = { id = "ChainReaction", radius = 7, maxStages = 3 }, -- 확정
+}
+
 return Characters

@@ -69,6 +69,16 @@ EffectCatalog.Cues = {
 	["ball.cyclone.start"] = { style = "Ring", color = { 255, 255, 255 }, size = 10, lifetime = 0.5, sound = "parry" },
 	["ball.cyclone.shot"] = { style = "Muzzle", color = { 255, 120, 220 }, size = 1.6, lifetime = 0.1, sound = "burst" },
 	["ball.cyclone.end"] = { style = "Ring", color = { 255, 120, 220 }, size = 6, lifetime = 0.3 },
+	-- TIMEBOMB (Phase 2)
+	["bomb.projectile"] = { style = "Projectile", color = { 255, 160, 40 }, size = 0.8, lifetime = 60 },
+	["bomb.explosion"] = { style = "Burst", color = { 255, 120, 30 }, size = 14, lifetime = 0.5, sound = "boom" },
+	["bomb.throw"] = { style = "Muzzle", color = { 255, 160, 40 }, size = 1.4, lifetime = 0.1, sound = "paint_fire" },
+	["bomb.guard"] = { style = "Ring", color = { 255, 200, 90 }, size = 10, lifetime = 0.4, sound = "boom" },
+	["bomb.cluster"] = { style = "Muzzle", color = { 255, 90, 60 }, size = 1.8, lifetime = 0.12, sound = "burst" },
+	["bomb.remote"] = { style = "Muzzle", color = { 90, 200, 255 }, size = 1.6, lifetime = 0.12, sound = "burst" },
+	["bomb.detonate"] = { style = "Ring", color = { 255, 255, 255 }, size = 6, lifetime = 0.3, sound = "parry" },
+	["bomb.jump"] = { style = "Burst", color = { 255, 200, 90 }, size = 7, lifetime = 0.3, sound = "boom" },
+	["bomb.bigbang"] = { style = "Muzzle", color = { 255, 60, 30 }, size = 3, lifetime = 0.2, sound = "burst" },
 	["reload.start"] = { style = "Ring", color = { 200, 200, 200 }, size = 2, lifetime = 0.3, sound = "reload" },
 	["reload.done"] = { style = "Burst", color = { 120, 255, 140 }, size = 2, lifetime = 0.2, sound = "reload" },
 	["death.poof"] = { style = "Poof", color = { 200, 200, 200 }, size = 6, lifetime = 0.6 },
@@ -79,6 +89,7 @@ EffectCatalog.Cues = {
 EffectCatalog.Weapons = {
 	SWORD = { kind = "Sword", color = { 200, 205, 215 }, handleColor = { 90, 60, 40 }, length = 4.2, attach = { "RightHand", "Right Arm" } },
 	SUPERBALL = { kind = "Gun", color = { 40, 90, 140 }, accent = { 80, 220, 255 }, length = 1.8, attach = { "RightHand", "Right Arm" } },
+	TIMEBOMB = { kind = "Gun", color = { 90, 60, 50 }, accent = { 255, 160, 40 }, length = 1.6, attach = { "RightHand", "Right Arm" } },
 	PAINTBALL = { kind = "Gun", color = { 60, 60, 70 }, accent = { 255, 140, 40 }, length = 2.4, attach = { "RightHand", "Right Arm" } },
 }
 

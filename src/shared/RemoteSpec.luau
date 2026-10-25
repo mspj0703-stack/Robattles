@@ -44,7 +44,7 @@ RemoteSpec.Remotes = {
 	}),
 	-- 캐릭터 선택: 다음 리스폰부터 적용(확정 규칙). 현재는 Phase 1 테스트 캐릭터만 허용.
 	SelectCharacter = Schema.object({
-		characterId = Schema.oneOf({ "SWORD", "PAINTBALL", "SUPERBALL" }), -- 구현 단계마다 추가(TIMEBOMB·SLINGSHOT)
+		characterId = Schema.oneOf({ "SWORD", "PAINTBALL", "SUPERBALL", "TIMEBOMB" }), -- 구현 단계마다 추가(SLINGSHOT)
 	}),
 	SetRun = Schema.object({
 		enabled = Schema.boolean(),

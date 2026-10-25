@@ -121,7 +121,7 @@ T.describe("EffectCatalog: 교체 가능한 구조 검증", function()
 		T.expect(Catalog.Cues["reload.start"] ~= nil) -- 상태 에지로 재생되는 큐
 	end)
 	T.it("구현된 캐릭터 모두 임시 무기 규격이 있고 그 외(레거시 스텁) 규격은 없다", function()
-		local implemented = { SWORD = true, PAINTBALL = true, SUPERBALL = true }
+		local implemented = { SWORD = true, PAINTBALL = true, SUPERBALL = true, TIMEBOMB = true }
 		for id in implemented do T.expect(Catalog.Weapons[id] ~= nil, id) end
 		for id in Catalog.Weapons do T.expect(implemented[id] == true, id) end
 	end)

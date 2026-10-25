@@ -180,7 +180,7 @@ remotes:WaitForChild("Feedback").OnClientEvent:Connect(function(event)
 	-- SWORD 스킬 전진/돌진: 서버가 이동 허가를 발급한 뒤 보낸 이벤트만 따른다.
 	if MovementModel.acceptDashEvent(event, myId, now(), lastDashAccepted, 1) then
 		lastDashAccepted = event.time
-		dashState = { start = now(), dir = event.direction, speed = event.dash.speed, duration = event.dash.duration, permit = event.dash.permit }
+		dashState = { start = now(), dir = event.direction, speed = event.dash.speed, duration = event.dash.duration, permit = event.dash.permit, up = event.dash.up }
 		dodgeState = nil
 	elseif (event.type == "SwordSkill" or event.type == "CharSkill") and event.playerId == myId and event.phase == "Cancel" then
 		dashState = nil
@@ -279,9 +279,9 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 	if h and dashState then
-		local v = MovementModel.dashVelocity(dashState.start, dashState.dir, dashState.speed, dashState.duration, now(), nil, dashState.permit)
+		local v = MovementModel.dashVelocity(dashState.start, dashState.dir, dashState.speed, dashState.duration, now(), nil, dashState.permit, dashState.up)
 		if v then
-			h.AssemblyLinearVelocity = Vector3.new(v.X, h.AssemblyLinearVelocity.Y, v.Z)
+			h.AssemblyLinearVelocity = Vector3.new(v.X, v.Y or h.AssemblyLinearVelocity.Y, v.Z)
 		else
 			dashState = nil
 		end

@@ -58,6 +58,10 @@ local Config = {
 		ChainExplosionFalloff = 0.5, -- ASSUMPTION A07: 동일 공격자 연쇄 폭발 피해 배율(반복마다 곱)
 		ChainExplosionMinMult = 0.25, -- ASSUMPTION A07
 		ChainExplosionWindow = 1.5, -- ASSUMPTION A07
+		-- 확정(TIMEBOMB 사양, A76): req.explosionProfile == "Timebomb" 인 폭발만 쓰는 별도 감쇠. 같은 공격자·같은 대상에 0.3초 안에 반복되면 100% → 60% → 30%(이후 30%).
+		-- 다른 캐릭터의 폭발(PAINTBALL Color Bomb 등)과 빔·다단 히트는 위 A07 값을 그대로 쓴다(영향 없음).
+		TimebombChainMults = { 1, 0.6, 0.3 },
+		TimebombChainWindow = 0.3,
 		MaxHealth = 100, -- ASSUMPTION A08
 		MaxSingleHitDamage = 200, -- ASSUMPTION A18: 서버 계산 피해의 안전 상한
 		StaggerMaxDuration = 0.4, -- ASSUMPTION A19
@@ -113,6 +117,7 @@ local Config = {
 			PaintSlide = { maxSpeed = 45, maxUp = 0, maxDuration = 1.5, minInterval = 1, directional = true },
 			BounceDash = { maxSpeed = 90, maxUp = 40, maxDuration = 0.8, minInterval = 1, directional = false },
 			BlastJump = { maxSpeed = 70, maxUp = 110, maxDuration = 1.2, minInterval = 1, directional = false },
+			BlastGuard = { maxSpeed = 60, maxUp = 20, maxDuration = 0.5, minInterval = 1, directional = false }, -- A76: TIMEBOMB Blast Guard 자기 반동
 		},
 		MaxActivePermits = 8,	},
 

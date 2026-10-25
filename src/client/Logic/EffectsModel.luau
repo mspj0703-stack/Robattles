@@ -110,6 +110,22 @@ function EffectsModel.translate(event, myId)
 		end
 	elseif t == "BallEnd" then
 		out[#out + 1] = { cue = "projectile.end", projectileId = event.ballId, pos = event.pos, reason = event.reason }
+	elseif t == "BombSpawn" then
+		-- TIMEBOMB 폭탄: 비행은 보간, 착지(BombLand)에서 고정, 폭발/종료(BombExplode/BombEnd)에서 제거
+		if type(event.pos) == "table" and type(event.vel) == "table" and event.bombId ~= nil then
+			out[#out + 1] = EffectsModel.ballCue("bomb.projectile", { ballId = event.bombId, ownerId = event.ownerId, pos = event.pos, vel = event.vel, gravity = event.gravity, lifetime = 60, time = event.time }, myId)
+		end
+	elseif t == "BombLand" then
+		if event.bombId ~= nil and type(event.pos) == "table" then
+			out[#out + 1] = EffectsModel.ballCue("ball.update", { ballId = event.bombId, ownerId = event.ownerId, pos = event.pos, vel = { X = 0, Y = 0, Z = 0 }, mode = "Landed", time = event.time }, myId)
+		end
+	elseif t == "BombExplode" then
+		if type(event.pos) == "table" then
+			out[#out + 1] = { cue = "bomb.explosion", pos = event.pos, radius = event.radius, playerId = event.ownerId, mine = event.ownerId == myId, stage = event.stage }
+		end
+		out[#out + 1] = { cue = "projectile.end", projectileId = event.bombId, pos = event.pos, reason = "Exploded" }
+	elseif t == "BombEnd" then
+		out[#out + 1] = { cue = "projectile.end", projectileId = event.bombId, pos = event.pos, reason = event.reason }
 	elseif t == "Reloaded" then
 		table.insert(out, { cue = "reload.done", playerId = event.playerId, mine = event.playerId == myId })
 	elseif t == "Died" then
@@ -139,6 +155,9 @@ function EffectsModel.ballPosition(cue, now, ownerPos)
 	end
 	local elapsed = math.max(0, now - cue.startTime)
 	local mode = cue.mode or "Fly"
+	if mode == "Landed" then
+		return cue.pos
+	end
 	if mode == "Orbit" then
 		local o = cue.orbit
 		if type(o) ~= "table" or not ownerPos then

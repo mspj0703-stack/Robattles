@@ -1,6 +1,6 @@
 # 자동 테스트 결과 (Luau CLI, 순수 로직)
 
-실행 시각: 2026-10-25 14:49
+실행 시각: 2026-10-25 14:59
 종료 코드: 0
 
 ```
@@ -617,6 +617,85 @@ PASS  SUPERBALL 클라이언트 순수 로직 > EffectsModel: BallSpawn → 볼 
 PASS  SUPERBALL 클라이언트 순수 로직 > EffectsModel.ballPosition: 포물선·귀환·공전
 PASS  SUPERBALL 클라이언트 순수 로직 > HUD: 스킬 3칸·보조(대시) 쿨·볼 수·충전 비율·최대 체력 100
 PASS  SUPERBALL 클라이언트 순수 로직 > 무기·조준선 카탈로그 등록
+PASS  TIMEBOMB 구조·확정 수치 > HP 105, 모듈 연결, 확정 수치
+PASS  TIMEBOMB 구조·확정 수치 > SelectCharacter 에 TIMEBOMB 포함, 테스트 전용 GUNNER 는 실제 데이터·선택 스키마에 없다
+PASS  TIMEBOMB 구조·확정 수치 > BlastGuard 이동 허가 종류가 있고 BlastJump 와 별개
+PASS  폭발 감쇠 프로필 — TIMEBOMB 전용 100% → 60% → 30% (0.3초) > 0.3초 안의 연속 폭발: 40 / 24 / 12 / 12
+PASS  폭발 감쇠 프로필 — TIMEBOMB 전용 100% → 60% → 30% (0.3초) > 0.3초가 지나면 초기화
+PASS  폭발 감쇠 프로필 — TIMEBOMB 전용 100% → 60% → 30% (0.3초) > 공격자별로 독립: 다른 플레이어의 폭발은 같은 감쇠 카운터를 쓰지 않는다
+PASS  폭발 감쇠 프로필 — TIMEBOMB 전용 100% → 60% → 30% (0.3초) > 피격자별로 독립
+PASS  폭발 감쇠 프로필 — TIMEBOMB 전용 100% → 60% → 30% (0.3초) > 다른 프로필(기존 A07: PAINTBALL 폭발 등)과 카운터를 공유하지 않고 그 값은 그대로(40/20/10)
+PASS  폭발 감쇠 프로필 — TIMEBOMB 전용 100% → 60% → 30% (0.3초) > 폭발이 아닌 종류(빔·직접·투사체 다단 히트)에는 감쇠가 적용되지 않는다
+PASS  폭발 감쇠 프로필 — TIMEBOMB 전용 100% → 60% → 30% (0.3초) > PAINTBALL Color Break·SWORD 다단 히트는 감쇠 영향 없음(빔 kind)
+PASS  TIMEBOMB LMB — Timed Bomb (20, 약 1초 뒤 폭발, 간격 약 1.2초) > 던진 뒤 1.0초에 폭발해 착지 지점 근처 적에게 20, 그 전에는 피해 없음
+PASS  TIMEBOMB LMB — Timed Bomb (20, 약 1초 뒤 폭발, 간격 약 1.2초) > 실제 폭발 위치로 판정: 착지 지점에서 먼 적은 맞지 않는다(조준한 곳이 아님)
+PASS  TIMEBOMB LMB — Timed Bomb (20, 약 1초 뒤 폭발, 간격 약 1.2초) > 자기 폭발에 체력 피해 없음(폭발 한가운데에 서 있어도)
+PASS  TIMEBOMB LMB — Timed Bomb (20, 약 1초 뒤 폭발, 간격 약 1.2초) > 벽 뒤의 적은 폭발에 맞지 않는다(차폐)
+PASS  TIMEBOMB LMB — Timed Bomb (20, 약 1초 뒤 폭발, 간격 약 1.2초) > 발사 간격 1.2초: 연타 거부, 폭탄 추가 없음
+PASS  TIMEBOMB LMB — Timed Bomb (20, 약 1초 뒤 폭발, 간격 약 1.2초) > 부활 보호: 거부는 유지, 던지기 성공 시 해제 / 사망 중 거부
+PASS  TIMEBOMB LMB — Timed Bomb (20, 약 1초 뒤 폭발, 간격 약 1.2초) > 던진 폭탄은 던진 사람이 죽어도 폭발하고 피해는 소유자에게 귀속(Timed 는 설치물이 아님)
+PASS  TIMEBOMB RMB — Blast Guard (근처 적 10 + 넉백, 자기 반동 이동, 쿨 8) > 근처 적 10, 먼 적 0, 자기 피해 0, 쿨 8초
+PASS  TIMEBOMB RMB — Blast Guard (근처 적 10 + 넉백, 자기 반동 이동, 쿨 8) > 자기 반동: 조준 반대 방향 6스터드, BlastGuard 허가와 dash 이벤트
+PASS  TIMEBOMB RMB — Blast Guard (근처 적 10 + 넉백, 자기 반동 이동, 쿨 8) > 넉백 효과가 피해 요청에 실린다(적용은 Config.Knockback.Enabled 가 켜졌을 때)
+PASS  TIMEBOMB RMB — Blast Guard (근처 적 10 + 넉백, 자기 반동 이동, 쿨 8) > 뒤가 벽이면 반동만 생략하고 폭발(방어)은 그대로
+PASS  TIMEBOMB RMB — Blast Guard (근처 적 10 + 넉백, 자기 반동 이동, 쿨 8) > 이동 허가가 거부되면 폭발·쿨타임 모두 없음
+PASS  TIMEBOMB RMB — Blast Guard (근처 적 10 + 넉백, 자기 반동 이동, 쿨 8) > 벽 너머 적은 맞지 않는다
+PASS  TIMEBOMB RMB — Blast Guard (근처 적 10 + 넉백, 자기 반동 이동, 쿨 8) > Blast Guard 폭발도 7스터드 안의 자기 설치물을 연쇄 기폭한다(자기 폭탄만)
+PASS  TIMEBOMB RMB — Blast Guard (근처 적 10 + 넉백, 자기 반동 이동, 쿨 8) > 부활 보호: 공격 행동이라 성공 시 해제, 거부 시 유지
+PASS  TIMEBOMB Skill 1 — Cluster Bomb (18 + 자탄 4×8, 쿨 13) > 본폭발 18 + 자탄 4개가 차례로 8씩 = 50, 쿨 13초
+PASS  TIMEBOMB Skill 1 — Cluster Bomb (18 + 자탄 4×8, 쿨 13) > 자탄은 본폭발 이후에만 생기고 서로 0.3초보다 길게 떨어져 터진다
+PASS  TIMEBOMB Skill 1 — Cluster Bomb (18 + 자탄 4×8, 쿨 13) > 자탄은 연쇄 반응의 대상이 아니다(서로 연쇄 기폭되지 않아 차례로 터진다)
+PASS  TIMEBOMB Skill 1 — Cluster Bomb (18 + 자탄 4×8, 쿨 13) > 쿨타임 중 재사용 거부, 보호는 성공 시에만 해제
+PASS  TIMEBOMB Skill 1 — Cluster Bomb (18 + 자탄 4×8, 쿨 13) > Release 위조는 거부
+PASS  TIMEBOMB Skill 1 — Cluster Bomb (18 + 자탄 4×8, 쿨 13) > 소유자 동시 폭탄 상한(24) 초과분은 만들지 않는다
+PASS  TIMEBOMB Skill 2 — Remote Bomb (설치 2·충전 2·11초, 28, 반경 7) > 짧게 누르고 떼면 설치(던지기): 충전 1 소모, 폭발하지 않는다
+PASS  TIMEBOMB Skill 2 — Remote Bomb (설치 2·충전 2·11초, 28, 반경 7) > 0.4초 이상 누르고 떼면 전체 기폭: 설치물 모두 폭발, 충전 소모 없음
+PASS  TIMEBOMB Skill 2 — Remote Bomb (설치 2·충전 2·11초, 28, 반경 7) > 정확히 0.4초는 기폭, 0.39초는 설치
+PASS  TIMEBOMB Skill 2 — Remote Bomb (설치 2·충전 2·11초, 28, 반경 7) > 중복 Release 는 설치도 기폭도 반복하지 않는다
+PASS  TIMEBOMB Skill 2 — Remote Bomb (설치 2·충전 2·11초, 28, 반경 7) > 지연된 Release: 너무 오래 뒤(10초 초과)면 취소, Press 없는 Release 는 거부
+PASS  TIMEBOMB Skill 2 — Remote Bomb (설치 2·충전 2·11초, 28, 반경 7) > Release 가 안 오면 서버가 누르기를 정리해 다시 Press 할 수 있다
+PASS  TIMEBOMB Skill 2 — Remote Bomb (설치 2·충전 2·11초, 28, 반경 7) > 설치할 폭탄이 없을 때 기폭 시도는 거부(부수효과 없음)
+PASS  TIMEBOMB Skill 2 — Remote Bomb (설치 2·충전 2·11초, 28, 반경 7) > 충전 2: 세 번째 설치는 no_charge, 충전은 각각 11초 뒤 복구, 설치 최대 2
+PASS  TIMEBOMB Skill 2 — Remote Bomb (설치 2·충전 2·11초, 28, 반경 7) > 두 번째 충전도 독립적으로 사용 시각 + 11초에 복구
+PASS  TIMEBOMB Skill 2 — Remote Bomb (설치 2·충전 2·11초, 28, 반경 7) > 설치물은 28 피해·반경 7, 설치 수명(30초) 만료 시 폭발 없이 사라진다
+PASS  TIMEBOMB Skill 2 — Remote Bomb (설치 2·충전 2·11초, 28, 반경 7) > 자기 설치물에 체력 피해 없음, 벽 뒤 적은 피해 없음
+PASS  TIMEBOMB Skill 2 — Remote Bomb (설치 2·충전 2·11초, 28, 반경 7) > 부활 보호: 누르기·거부는 유지, 설치 성공 시 해제
+PASS  TIMEBOMB Skill 2 — Remote Bomb (설치 2·충전 2·11초, 28, 반경 7) > 사망·리스폰·캐릭터 변경 시 설치물과 누르기 정리
+PASS  TIMEBOMB Skill 2 — Remote Bomb (설치 2·충전 2·11초, 28, 반경 7) > 서버·클라이언트 폭탄 상태 일치: 모든 BombSpawn 은 폭발/종료로 짝을 이룬다
+PASS  TIMEBOMB Skill 3 — Blast Jump (약 14스터드, 공중 가능, 쿨 9, 이동 허가) > BlastJump 허가를 발급하고 14스터드 반동을 알린다, 쿨 9초
+PASS  TIMEBOMB Skill 3 — Blast Jump (약 14스터드, 공중 가능, 쿨 9, 이동 허가) > 공중에서도 사용 가능
+PASS  TIMEBOMB Skill 3 — Blast Jump (약 14스터드, 공중 가능, 쿨 9, 이동 허가) > 서버가 허가를 거부하면 쿨타임·보호를 쓰지 않는다
+PASS  TIMEBOMB Skill 3 — Blast Jump (약 14스터드, 공중 가능, 쿨 9, 이동 허가) > 바로 위가 막히면(천장) 거부
+PASS  TIMEBOMB Skill 3 — Blast Jump (약 14스터드, 공중 가능, 쿨 9, 이동 허가) > 판정 없는 이동기: 적에게 피해 없고 부활 보호 유지, 자기 피해 없음
+PASS  TIMEBOMB Skill 3 — Blast Jump (약 14스터드, 공중 가능, 쿨 9, 이동 허가) > 발밑 폭발이 가까운 자기 폭탄을 연쇄 기폭한다(2단계부터)
+PASS  TIMEBOMB Skill 3 — Blast Jump (약 14스터드, 공중 가능, 쿨 9, 이동 허가) > 클라이언트: 수직 성분은 허가 종류(BlastJump)의 상승 상한까지만
+PASS  TIMEBOMB Ultimate — Big Bang (착지 3초 뒤 폭발, 반경 18, 중심 70 / 가장자리 35) > 게이지 부족이면 거부: 폭탄·게이지 불변
+PASS  TIMEBOMB Ultimate — Big Bang (착지 3초 뒤 폭발, 반경 18, 중심 70 / 가장자리 35) > 실제 착지 위치에서 정확히 3초 뒤 폭발, 중심 근처 적에게 70
+PASS  TIMEBOMB Ultimate — Big Bang (착지 3초 뒤 폭발, 반경 18, 중심 70 / 가장자리 35) > 가장자리 35, 반경 밖 0, 자기 피해 0
+PASS  TIMEBOMB Ultimate — Big Bang (착지 3초 뒤 폭발, 반경 18, 중심 70 / 가장자리 35) > 벽 뒤의 적은 차폐
+PASS  TIMEBOMB Ultimate — Big Bang (착지 3초 뒤 폭발, 반경 18, 중심 70 / 가장자리 35) > 지형 충돌: 벽에 부딪히면 그 자리에 떨어져 3초 뒤 폭발
+PASS  TIMEBOMB Ultimate — Big Bang (착지 3초 뒤 폭발, 반경 18, 중심 70 / 가장자리 35) > Blast Jump 직후 공중에서 쓰면 더 멀리 던진다(공중이 아니거나 점프 없이면 보통)
+PASS  TIMEBOMB Ultimate — Big Bang (착지 3초 뒤 폭발, 반경 18, 중심 70 / 가장자리 35) > 착지하지 못해도(바닥 없음) 비행 한도 6초에 폭발
+PASS  TIMEBOMB Ultimate — Big Bang (착지 3초 뒤 폭발, 반경 18, 중심 70 / 가장자리 35) > 던진 뒤 죽어도 폭탄은 남아 폭발하고 피해는 소유자에게 귀속
+PASS  TIMEBOMB Ultimate — Big Bang (착지 3초 뒤 폭발, 반경 18, 중심 70 / 가장자리 35) > 연쇄로 조기 기폭되지 않는다(Big Bang 은 연쇄 대상이 아님)
+PASS  TIMEBOMB Passive — Chain Reaction (자기 폭탄 반경 7, 최초 포함 최대 3단계) > 단계: 0 → 5 → 10 은 1·2·3단계로 터지고 15 는 4단계라 터지지 않는다
+PASS  TIMEBOMB Passive — Chain Reaction (자기 폭탄 반경 7, 최초 포함 최대 3단계) > 반경 7 이내만: 7.0 은 전파, 7.1 은 전파하지 않는다
+PASS  TIMEBOMB Passive — Chain Reaction (자기 폭탄 반경 7, 최초 포함 최대 3단계) > 다른 사람의 폭탄에는 전파되지 않는다(자기 폭탄에만)
+PASS  TIMEBOMB Passive — Chain Reaction (자기 폭탄 반경 7, 최초 포함 최대 3단계) > 같은 폭탄은 두 번 기폭되지 않는다(서로 가까운 폭탄들)
+PASS  TIMEBOMB Passive — Chain Reaction (자기 폭탄 반경 7, 최초 포함 최대 3단계) > 결정적 순서: 같은 입력이면 폭발 순서·단계가 항상 같다
+PASS  TIMEBOMB Passive — Chain Reaction (자기 폭탄 반경 7, 최초 포함 최대 3단계) > 원격 전체 기폭의 모든 폭탄은 1단계(서로 연쇄로 이중 처리되지 않음)
+PASS  TIMEBOMB Passive — Chain Reaction (자기 폭탄 반경 7, 최초 포함 최대 3단계) > 연쇄로 같은 적을 반복해 맞히면 100% → 60% → 30% (같은 순간)
+PASS  TIMEBOMB Passive — Chain Reaction (자기 폭탄 반경 7, 최초 포함 최대 3단계) > 서로 다른 TIMEBOMB 의 폭발은 같은 적에게 각각 100%
+PASS  TIMEBOMB Passive — Chain Reaction (자기 폭탄 반경 7, 최초 포함 최대 3단계) > 퇴장하면 던진 폭탄까지 모두 정리(폭발 없음)
+PASS  TIMEBOMB 보안·동시 사용·회귀 > 라우터 경유: Press/Release 설치, 위조 phase 거부, 같은 Release 반복 거부
+PASS  TIMEBOMB 보안·동시 사용·회귀 > 스팸 입력: 100번 Press/Release 해도 설치는 최대 2개, 폭탄 총량 상한 유지
+PASS  TIMEBOMB 보안·동시 사용·회귀 > 동시 사용: 두 TIMEBOMB 의 충전·설치물은 서로 독립
+PASS  TIMEBOMB 보안·동시 사용·회귀 > 기존 캐릭터 회귀: SWORD·PAINTBALL·SUPERBALL 최대 체력과 기본 동작
+PASS  TIMEBOMB 보안·동시 사용·회귀 > 서버가 보내는 모든 TIMEBOMB 큐 이름이 카탈로그에 있다(실제 이벤트 수집)
+PASS  TIMEBOMB 클라이언트 순수 로직 > InputState: 스킬 2 는 누름=Press, 뗌=Release 를 서버로 보낸다
+PASS  TIMEBOMB 클라이언트 순수 로직 > EffectsModel: BombSpawn → 폭탄 큐, BombLand → 고정, BombExplode → 폭발 + 제거
+PASS  TIMEBOMB 클라이언트 순수 로직 > HUD: 최대 체력 105, Remote Bomb 충전·설치 표시, 충전 0 이면 복구 시간
+PASS  TIMEBOMB 클라이언트 순수 로직 > 무기·조준선 카탈로그 등록
 PASS  EffectsModel: 이벤트 → 연출 큐 > Swing → sword.slash (내 것 mine=true)
 PASS  EffectsModel: 이벤트 → 연출 큐 > 패링 시작/성공/반격 표시
 PASS  EffectsModel: 이벤트 → 연출 큐 > Damaged → 피격 번쩍임 + 충격 연출, 공격자 관점 mine 구분
@@ -669,5 +748,5 @@ PASS  통합: 서버/클라이언트 동기화 > Correct 이벤트 수용: 최�
 PASS  통합: 서버/클라이언트 동기화 > dodgeVelocity: 서버가 줄인 거리 반영, 0이면 이동 없음, 기본 거리 초과 값은 제한
 PASS  통합: 서버/클라이언트 동기화 > 서버 보정 → 같은 위치 재관찰은 ok: 보정이 반복 루프를 만들지 않는다
 
-합계: 664 통과 / 0 실패 / 664 전체
+합계: 743 통과 / 0 실패 / 743 전체
 ```

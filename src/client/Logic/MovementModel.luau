@@ -49,7 +49,7 @@ end
 
 -- SWORD 돌진/전진(Triple Slash, Lunge): 서버가 SwordSkill 이벤트로 확정한 속도·시간만 따른다(서버 이동 허가와 같은 값).
 -- 반환: 수평 속도 벡터 또는 nil(시간이 끝났거나 값이 비정상). 상한은 허가 상한(Config.MoveCheck.Permits)으로 제한한다.
-function MovementModel.dashVelocity(startTime, direction, speed, duration, now, config, permitKind)
+function MovementModel.dashVelocity(startTime, direction, speed, duration, now, config, permitKind, up)
 	local cfg = config or Config
 	if type(startTime) ~= "number" or type(speed) ~= "number" or type(duration) ~= "number" or type(direction) ~= "table" then
 		return nil
@@ -76,7 +76,12 @@ function MovementModel.dashVelocity(startTime, direction, speed, duration, now, 
 			end
 		end
 	end
-	return Vec.scale(dir, math.min(speed, cap))
+	local out = Vec.scale(dir, math.min(speed, cap))
+	if type(up) == "number" and up == up and up > 0 then
+		-- 수직 성분(Blast Jump): 서버가 알려 준 허가 종류의 상승 상한으로만 제한(종류를 모르면 수직 이동 없음)
+		out.Y = exact and math.min(up, exact.maxUp) or 0
+	end
+	return out
 end
 
 -- 내 SwordSkill / CharSkill(캐릭터 모듈) 이벤트 중 이동을 동반한 것만 수용(최근·중복 아님)

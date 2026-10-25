@@ -162,19 +162,31 @@ function DamageService:applyDamage(req, now)
 	-- 동일 공격자 연쇄 폭발 감쇠
 	local kind = req.kind or "Direct"
 	if kind == "Explosion" then
-		local byTarget = self._chain[req.attackerId]
+		-- 공격자별·대상별·프로필별로 독립 관리. 다른 플레이어의 폭발이나 다른 프로필(예: 기본 A07)과 카운터를 공유하지 않는다.
+		local profile = req.explosionProfile == "Timebomb" and "Timebomb" or "Default"
+		local byProfile = self._chain[req.attackerId]
+		if not byProfile then
+			byProfile = {}
+			self._chain[req.attackerId] = byProfile
+		end
+		local byTarget = byProfile[profile]
 		if not byTarget then
 			byTarget = {}
-			self._chain[req.attackerId] = byTarget
+			byProfile[profile] = byTarget
 		end
 		local times = byTarget[req.targetId] or {}
+		local window = profile == "Timebomb" and c.TimebombChainWindow or c.ChainExplosionWindow
 		local live = {}
 		for _, t in times do
-			if now - t <= c.ChainExplosionWindow then
+			if now - t <= window + 1e-9 then
 				table.insert(live, t)
 			end
 		end
-		amount *= math.max(c.ChainExplosionMinMult, c.ChainExplosionFalloff ^ #live)
+		if profile == "Timebomb" then
+			amount *= c.TimebombChainMults[math.min(#live + 1, #c.TimebombChainMults)]
+		else
+			amount *= math.max(c.ChainExplosionMinMult, c.ChainExplosionFalloff ^ #live)
+		end
 		table.insert(live, now)
 		byTarget[req.targetId] = live
 	end
