@@ -1,0 +1,45 @@
+{
+  "name": "RoBattles",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "RoBattles": {
+        "$className": "Folder",
+        "Shared": {
+          "$path": "src/shared"
+        },
+        "Assets": {
+          "$className": "Folder",
+          "Effects": {
+            "$className": "Folder"
+          },
+          "Weapons": {
+            "$className": "Folder"
+          }
+        }
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "RoBattles": {
+        "$path": "src/server"
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "RoBattles": {
+          "$path": "src/client"
+        }
+      }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "RoBattlesTests": {
+        "$path": "tests"
+      }
+    }
+  }
+}

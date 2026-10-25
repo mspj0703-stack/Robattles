@@ -1,0 +1,36 @@
+--!nonstrict
+-- 모든 스펙을 불러오고 결과를 보고한다. Studio에서는 이 ModuleScript를 require하면 된다.
+local T = require(script.Parent.TestRunner)
+
+require(script.Parent["Config.spec"])
+require(script.Parent["Schema.spec"])
+require(script.Parent["RemoteSpec.spec"])
+require(script.Parent["ProjectileSpec.spec"])
+require(script.Parent["Keybinds.spec"])
+require(script.Parent["Cooldown.spec"])
+require(script.Parent["Dodge.spec"])
+require(script.Parent["StatusEffect.spec"])
+require(script.Parent["Damage.spec"])
+require(script.Parent["Hitbox.spec"])
+require(script.Parent["Ultimate.spec"])
+require(script.Parent["RemoteGate.spec"])
+require(script.Parent["CombatCore.spec"])
+require(script.Parent["Projectile.spec"])
+require(script.Parent["Character.spec"])
+require(script.Parent["Parry.spec"])
+require(script.Parent["Scoreboard.spec"])
+require(script.Parent["Client.spec"])
+require(script.Parent["Movement.spec"])
+require(script.Parent["MovementPermit.spec"])
+require(script.Parent["Respawn.spec"])
+require(script.Parent["Stability.spec"])
+require(script.Parent["Sword.spec"])
+require(script.Parent["Effects.spec"])
+require(script.Parent["Spawn.spec"])
+require(script.Parent["Integration.spec"])
+
+local ok = T.report()
+if not ok then
+	error("테스트 실패")
+end
+return ok
