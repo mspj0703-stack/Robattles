@@ -34,6 +34,10 @@ require(script.Parent["Effects.spec"])
 require(script.Parent["Spawn.spec"])
 require(script.Parent["Integration.spec"])
 
+require(script.Parent["MatchFlow.spec"])
+require(script.Parent["MatchSession.spec"])
+require(script.Parent["MatchBoundary5.spec"])
+
 local ok = T.report()
 if not ok then
 	error("테스트 실패")

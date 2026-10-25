@@ -16,7 +16,7 @@ local ProjectileService = require(script.Parent.ProjectileService)
 local CharacterController = require(script.Parent.CharacterController)
 local RemoteGate = require(script.Parent.RemoteGate)
 local ServerRouter = require(script.Parent.ServerRouter)
-local ScoreboardService = require(script.Parent.ScoreboardService)
+local MatchSession = require(script.Parent.MatchSession)
 local WorldAdapter = require(script.Parent.WorldAdapter)
 local MovementValidator = require(script.Parent.MovementValidator)
 local SpawnDirector = require(script.Parent.SpawnDirector)
@@ -77,11 +77,12 @@ local movement = MovementValidator.new({
 		warn(string.format("[RoBattles][Move] %s player=%s %s", kind, tostring(id), game:GetService("HttpService"):JSONEncode(detail)))
 	end,
 })
-local scoreboard = ScoreboardService.new()
-core.damage:onKilled(function(e)
-	scoreboard:onKill(e.attackerId, e.targetId)
-	scoreRemote:FireAllClients(scoreboard:snapshot())
-end)
+local matchSession
+local applyMatchBoundary -- assigned after map/spawn helpers; never yields
+local loadTickets, joined = {}, {}
+local function publishScores()
+	if matchSession then scoreRemote:FireAllClients(matchSession.flow:standings()) end
+end
 
 local function pose(id)
 	local model = characterModels[id]
@@ -131,6 +132,16 @@ local controller = CharacterController.new({
 	world = world,
 	movement = movement,
 })
+matchSession = MatchSession.new({
+	core = core, controller = controller, projectiles = projectiles, scheduler = scheduler,
+	onBoundary = function(...) if applyMatchBoundary then applyMatchBoundary(...) end end,
+	onTransition = function() publishScores() end,
+	onKill = function(e, matchId)
+		publishScores()
+		feedback:FireAllClients({type = "KillConfirmed", matchId = matchId, attackerId = e.attackerId,
+			targetId = e.targetId, attackId = e.attackId, kind = e.kind, time = e.now})
+	end,
+})
 -- 서버 넉백 적용기(A59): 기본 꺼짐. 켜면 Knockback 효과 결과를 HRP 속도로 적용하고 이동 허가를 발급한다.
 KnockbackApplier.new({
 	movement = movement,
@@ -144,6 +155,10 @@ KnockbackApplier.new({
 }):attach(core.damage)
 local gate = RemoteGate.new({
 	cooldown = core.cooldown,
+	selectionAllowed = function(id)
+		if matchSession.flow.players[id] then return true end
+		return false, "not_registered"
+	end,
 	getState = function(id)
 		local p = pose(id)
 		if not p then
@@ -153,7 +168,7 @@ local gate = RemoteGate.new({
 		return { alive = core.damage:isAlive(id), pos = p.pos, serverTime = now(), character = ch }
 	end,
 })
-local router = ServerRouter.new({ gate = gate, controller = controller })
+local router = ServerRouter.new({ gate = gate, controller = controller, match = matchSession })
 
 -- 연출 이벤트를 클라이언트에 전달 (클라이언트 렌더링은 3단계)
 projectiles:onEvent(function(e)
@@ -161,9 +176,6 @@ projectiles:onEvent(function(e)
 end)
 controller:onFeedback(function(e)
 	feedback:FireAllClients(e)
-	if e.type == "Died" then
-		scheduler:onDeath(e.playerId, e.time) -- 4초 뒤 서버가 직접 부활시킨다(중복 통지는 무시됨)
-	end
 end)
 -- 부활 보호 상태를 모든 클라이언트가 볼 수 있게 캐릭터 속성으로 동기화(표시 전용, 판정은 서버 DamageService)
 local function syncProtectionAttribute(id, on)
@@ -347,7 +359,7 @@ end
 -- 캐릭터가 선택한 스폰에 실제로 도착했는지 확인하고, 엔진이 다른 곳에 두었으면 한 번만 옮긴다(중복 이동 방지).
 local function verifyPlacement(player, model)
 	local id = player.UserId
-	local hrp = model:WaitForChild("HumanoidRootPart", 5)
+	local hrp = model:FindFirstChild("HumanoidRootPart")
 	if not hrp then
 		return
 	end
@@ -370,30 +382,57 @@ local function verifyPlacement(player, model)
 	end
 end
 
+applyMatchBoundary = function(previous, phase, t)
+	table.clear(chosen)
+	for id, model in characterModels do
+		local pl = joined[id]
+		local hum = model:FindFirstChildOfClass("Humanoid")
+		local hrp = model:FindFirstChild("HumanoidRootPart")
+		if hum and hrp then
+			model:SetAttribute("SpawnProtected", controller:isProtected(id, t))
+			if phase == "ACTIVE" and pl and hum.Health > 0 then
+				verifyPlacement(pl, model)
+				hum.Health = core.damage:getHealth(id)
+				model:SetAttribute("CharacterId", controller:getCharacterId(id))
+			end
+			hrp.AssemblyLinearVelocity = Vector3.zero
+			movement:teleported(id, {X = hrp.Position.X, Y = hrp.Position.Y, Z = hrp.Position.Z}, t)
+			if pl then feedback:FireClient(pl, {type = "Correct", pos = {X=hrp.Position.X,Y=hrp.Position.Y,Z=hrp.Position.Z}, time=t, reason="match_boundary"}) end
+		end
+	end
+end
+
 local function onCharacter(player, model)
 	local id = player.UserId
-	-- 같은 모델의 중복 CharacterAdded(직접 호출 + 이벤트 등)는 무시하고, 더 새로운 스폰이 시작되면 이전 처리를 중단한다.
+	local ticket = loadTickets[id]
+	if ticket and ticket.accepted and characterModels[id] == model then return end -- duplicate signal for accepted model
+	local function valid()
+		return joined[id] == player and player.Parent ~= nil and model.Parent ~= nil
+			and player.Character == model and matchSession:validLoad(ticket)
+	end
+	local function discard()
+		if characterModels[id] == model then characterModels[id] = nil; world.removeIgnore(model) end
+		matchSession:discardLoad(ticket)
+		if model.Parent ~= nil then model:Destroy() end
+	end
+	if not valid() then discard(); return end
 	local epoch = spawnGate:begin(id, model)
-	if not epoch then
-		return
-	end
+	if not epoch then return end
 	local hum = model:WaitForChild("Humanoid", 10)
-	-- yield 이후 검증: 퇴장했거나 더 새로운 캐릭터가 생겼거나 모델이 사라졌다면 오래된 결과이므로 현재 상태를 건드리지 않는다.
-	if not hum or player.Parent == nil or spawnGate:isStale(id, epoch) or model.Parent == nil then
-		if player.Parent == nil and model.Parent ~= nil then
-			model:Destroy()
-		end
-		return
-	end
-	spawnGate:commit(id, epoch, model)
+	local hrp = model:WaitForChild("HumanoidRootPart", 10)
+	matchSession:updatePhase(now())
+	if not hum or not hrp or not valid() or spawnGate:isStale(id, epoch) then discard(); return end
+	-- No yields after the final identity/epoch checks.
+	verifyPlacement(player, model)
+	if not spawnGate:commit(id, epoch, model) then discard(); return end
+	local previous = characterModels[id]
+	if previous and previous ~= model then world.removeIgnore(previous) end
 	characterModels[id] = model
 	world.addIgnore(model)
-	verifyPlacement(player, model)
 	local hrpNow = model:FindFirstChild("HumanoidRootPart")
 	if hrpNow then
 		movement:teleported(id, { X = hrpNow.Position.X, Y = hrpNow.Position.Y, Z = hrpNow.Position.Z }, now())
 	end
-	scheduler:onSpawned(id)
 	-- Roblox 기본 ForceField 가 붙어 2초 보호 규칙이 연장/중복되지 않게 제거한다(보호 판정은 서버 DamageService 만).
 	SpawnPadSpec.guardForceField(model, Config.Spawn.ForceFieldGuardSeconds, function(verdict)
 		if verdict == "removed" then
@@ -402,50 +441,47 @@ local function onCharacter(player, model)
 			warn("[RoBattles][Spawn] 식별 불가 ForceField 감지: 제거하지 않았습니다(의도된 보호 효과인지 확인)")
 		end
 	end)
-	controller:respawn(id, now())
+	-- 경기 세션이 로드 ticket 을 확인한 뒤 scheduler:onSpawned + controller:respawn + flow:spawned 를 한 번에 수행한다.
+	if not matchSession:spawned(id, ticket, now()) then discard(); return end
 	-- 캐릭터별 최대 체력(확정): 부활 시 선택된 캐릭터의 HP 로 표시용 Humanoid 를 맞춘다(판정은 DamageService).
 	hum.MaxHealth = controller:getMaxHealth(id)
 	hum.Health = controller:getMaxHealth(id)
 	model:SetAttribute("CharacterId", controller:getCharacterId(id)) -- 클라이언트 임시 무기 모델용(읽기 전용 정보)
 	hum.Died:Connect(function()
-		if spawnGate:acceptsDeath(id, epoch, model) then -- 교체된/퇴장한 캐릭터의 늦은 Died 는 현재 상태를 덮어쓰지 못한다
-			core.damage:forceKill(id, now()) -- 낙사 등 환경 사망도 동일 경로로 처리(이미 사망이면 무시)
+		if joined[id] == player and spawnGate:acceptsDeath(id, epoch, model) then
+			matchSession:environmentDeath(id, now())
 		end
 	end)
 	model.AncestryChanged:Connect(function(_, parent)
 		if parent == nil and characterModels[id] == model then
 			characterModels[id] = nil
 			world.removeIgnore(model)
+			if joined[id] == player then matchSession:environmentDeath(id, now()) end
 		end
 	end)
 end
 
 local function onPlayerAdded(player)
-	controller:addPlayer(player.UserId, "SWORD")
-	scoreboard:register(player.UserId, player.DisplayName)
-	scoreRemote:FireAllClients(scoreboard:snapshot())
-	scheduler:register(player.UserId)
-	player.CharacterAdded:Connect(function(model)
-		onCharacter(player, model)
-	end)
-	if player.Character then
-		onCharacter(player, player.Character)
-	else
-		-- 첫 입장: 맵 생성을 잠깐 기다린 뒤(최대 10초) 스폰을 골라 로드한다.
-		task.spawn(function()
-			if MapConfig then
-				workspace:WaitForChild(MapConfig.RootName, 10)
-			end
-			scheduler:requestInitial(player.UserId, now())
-		end)
-	end
+	if joined[player.UserId] or player.Parent == nil then return end
+	joined[player.UserId] = player
+	controller:addPlayer(player.UserId, "SWORD") -- internal default only; NOT permission to spawn/participate
+	matchSession:register(player.UserId, player.DisplayName)
+	player.CharacterAdded:Connect(function(model) onCharacter(player, model) end)
+	-- Menu selection is mandatory even when the script encounters an existing avatar.
+	if player.Character then player.Character:Destroy() end
+	publishScores()
 end
+
 Players.PlayerAdded:Connect(onPlayerAdded)
 -- 스크립트 시작 전에 이미 입장한 플레이어도 같은 경로로 처리
 for _, player in Players:GetPlayers() do
 	task.spawn(onPlayerAdded, player)
 end
 Players.PlayerRemoving:Connect(function(player)
+	if joined[player.UserId] ~= player then return end
+	joined[player.UserId] = nil
+	matchSession:remove(player.UserId, now())
+	loadTickets[player.UserId] = nil
 	controller:removePlayer(player.UserId, now())
 	movement:remove(player.UserId)
 	scheduler:remove(player.UserId)
@@ -459,14 +495,14 @@ Players.PlayerRemoving:Connect(function(player)
 		director:removePlayer(player.UserId)
 	end
 	characterModels[player.UserId] = nil
-	scoreboard:remove(player.UserId)
-	scoreRemote:FireAllClients(scoreboard:snapshot())
+	publishScores()
 end)
 
 -- 서버 루프: 투사체·재장전·궁극기·이동 속도 갱신
 local stateAccum, scoreAccum = 0, 0
 RunService.Heartbeat:Connect(function(dt)
 	local t = now()
+	matchSession:tick(t) -- transitions before damage/ultimate timers; end boundary cannot leak a combat tick
 	stateAccum += dt
 	scoreAccum += dt
 	if stateAccum >= 1 / Config.Hud.StateSyncHz then
@@ -474,16 +510,16 @@ RunService.Heartbeat:Connect(function(dt)
 		for _, player in Players:GetPlayers() do
 			local snap = controller:getHudSnapshot(player.UserId, t)
 			if snap then
-				stateRemote:FireClient(player, snap)
+				stateRemote:FireClient(player, matchSession:augmentSnapshot(player.UserId, snap, t))
 			end
 		end
 	end
 	if scoreAccum >= Config.Hud.ScoreboardSyncSeconds then
 		scoreAccum = 0
-		scoreRemote:FireAllClients(scoreboard:snapshot())
+		publishScores()
 	end
 	controller:update(t, dt)
-	for _, uid in scheduler:due(t) do
+	for _, uid in matchSession:due(t) do
 		local pl = Players:GetPlayerByUserId(uid)
 		if not pl then
 			scheduler:remove(uid)
@@ -491,7 +527,17 @@ RunService.Heartbeat:Connect(function(dt)
 			-- LoadCharacterAsync 는 yield 하므로 별도 스레드에서 호출한다. 성공 시 CharacterAdded → scheduler:onSpawned,
 			-- 실패 시 onLoadFailed(재시도 상한 적용), 응답이 없으면 스케줄러의 로드 타임아웃이 처리한다(중복 로드 방지).
 			local attemptId = scheduler:getAttempt(uid)
+			local ticket = matchSession:captureLoad(uid)
+			loadTickets[uid] = ticket
 			task.spawn(function()
+				if MapConfig and not workspace:FindFirstChild(MapConfig.RootName) then
+					if not workspace:WaitForChild(MapConfig.RootName, 10) then
+						scheduler:finishCall(uid, attemptId, false, now()); return
+					end
+				end
+				if joined[uid] ~= pl or not matchSession:validLoad(ticket) then
+					matchSession:discardLoad(ticket); scheduler:finishCall(uid, attemptId, false, now()); return
+				end
 				local ok = loadCharacterFor(pl)
 				-- 이 시도의 완료만 반영: 퇴장·교체·오래된 시도의 늦은 반환은 finishCall 이 무시한다.
 				scheduler:finishCall(uid, attemptId, ok, now())
@@ -501,7 +547,7 @@ RunService.Heartbeat:Connect(function(dt)
 	for id, model in characterModels do
 		local hum = model:FindFirstChildOfClass("Humanoid")
 		if hum then
-			hum.WalkSpeed = controller:getMoveSpeed(id, t)
+			hum.WalkSpeed = matchSession.flow.phase == "RESULTS" and 0 or controller:getMoveSpeed(id, t)
 			-- 서버 이동 검증(A41): 살아 있는 캐릭터만. 이상 이동이면 마지막 유효 위치로 되돌리고 클라이언트에 알린다.
 			local hrp = model:FindFirstChild("HumanoidRootPart")
 			if hrp and core.damage:isAlive(id) and hum.Health > 0 then

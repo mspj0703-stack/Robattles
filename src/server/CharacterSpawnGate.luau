@@ -6,7 +6,7 @@ local CharacterSpawnGate = {}
 CharacterSpawnGate.__index = CharacterSpawnGate
 
 function CharacterSpawnGate.new()
-	return setmetatable({ _epoch = {}, _current = {}, _seen = setmetatable({}, { __mode = "k" }) }, CharacterSpawnGate)
+	return setmetatable({ _nextEpoch = 0, _epoch = {}, _current = {}, _seen = setmetatable({}, { __mode = "k" }) }, CharacterSpawnGate)
 end
 
 -- 새 캐릭터 처리 시작. 이미 처리했거나 현재 모델이면 nil(중복), 아니면 epoch 번호.
@@ -15,7 +15,8 @@ function CharacterSpawnGate:begin(id, model)
 		return nil
 	end
 	self._seen[model] = true
-	local e = (self._epoch[id] or 0) + 1
+	self._nextEpoch += 1
+	local e = self._nextEpoch -- never reuse an epoch after a player reconnects
 	self._epoch[id] = e
 	return e
 end

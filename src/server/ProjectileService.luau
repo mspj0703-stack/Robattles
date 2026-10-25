@@ -578,6 +578,13 @@ function ProjectileService:ownerRemoved(ownerId, now)
 	self:ownerDied(ownerId, now)
 end
 
+-- Match membership change: remove the departed owner without detonation.
+function ProjectileService:cancelOwner(ownerId, now)
+	for _, p in table.clone(self._list) do
+		if p.ownerId == ownerId then self:_finish(p, "Cancelled", p.pos, now) end
+	end
+end
+
 -- 새 경기 등: 모든 투사체를 폭발 없이 제거
 function ProjectileService:clearAll(now)
 	for _, p in table.clone(self._list) do

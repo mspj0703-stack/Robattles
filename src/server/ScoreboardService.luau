@@ -27,11 +27,20 @@ function ScoreboardService:onKill(attackerId, targetId)
 	end
 end
 
--- 킬 많은 순 → 데스 적은 순 → 이름 순
+function ScoreboardService:has(id) return self._rows[id] ~= nil end
+
+function ScoreboardService:reset() self._rows = {} end
+
+function ScoreboardService:setConnected(id, connected, name)
+	local r = self._rows[id]
+	if r then r.connected = connected; if name then r.name = name end end
+end
+
+-- KO descending / deaths ascending. Name/id only stabilize display; they do not break rank ties.
 function ScoreboardService:snapshot()
 	local list = {}
 	for _, r in self._rows do
-		table.insert(list, { id = r.id, name = r.name, kills = r.kills, deaths = r.deaths })
+		table.insert(list, { id = r.id, name = r.name, kills = r.kills, deaths = r.deaths, connected = r.connected ~= false })
 	end
 	table.sort(list, function(a, b)
 		if a.kills ~= b.kills then
@@ -40,8 +49,15 @@ function ScoreboardService:snapshot()
 		if a.deaths ~= b.deaths then
 			return a.deaths < b.deaths
 		end
-		return tostring(a.name) < tostring(b.name)
+		if tostring(a.name) ~= tostring(b.name) then return tostring(a.name) < tostring(b.name) end
+		return tostring(a.id) < tostring(b.id)
 	end)
+	local rank = 0
+	for i, r in list do
+		local prev = list[i - 1]
+		if not prev or r.kills ~= prev.kills or r.deaths ~= prev.deaths then rank = i end
+		r.rank = rank -- competition ranking: 1, 1, 3
+	end
 	return list
 end
 

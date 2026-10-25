@@ -254,11 +254,44 @@ function CharacterController:removePlayer(id, now)
 end
 
 -- 캐릭터 선택: 다음 리스폰부터 적용. 반환: "set" | "pending" | "unchanged"
+function CharacterController:isCharacterSupported(characterId) return self._chars[characterId] ~= nil end
+
 function CharacterController:selectCharacter(id, characterId)
 	if not self._p[id] or not self._chars[characterId] then
 		return "unchanged"
 	end
 	return self._core:setCharacter(id, characterId)
+end
+
+-- Match boundary only: clear running casts, ammo/reload/combo state without rewriting any skill.
+function CharacterController:clearMatchTransient(id)
+	local st = self._p[id]; if not st then return end
+	self._core.ultimate:forceEnd(id, "MatchBoundary")
+	self._core.status:clear(id)
+	self._core.cooldown:clearEntity(id)
+	self._core.damage:clearProtection(id)
+	st.running = false
+	self:_resetCharacterState(st)
+end
+
+-- Match boundary only: 던진 폭탄·볼·고속탄 등 소유자에 묶이지 않은 객체를 폭발 없이 모두 제거한다(각 캐릭터 모듈의 clearAll).
+function CharacterController:clearMatchObjects(now)
+	for _, impl in self._impl do
+		if impl.clearAll then
+			impl:clearAll(now)
+		end
+	end
+end
+
+function CharacterController:beginMatch(now, isReady)
+	self._core:resetMatch(isReady)
+	for id, st in self._p do
+		st.characterId = self._core.ultimate:getCharacter(id) or st.characterId
+		st.running = false
+		self:_resetCharacterState(st)
+		st.alive = isReady(id)
+		if st.alive then self:respawn(id, now) end
+	end
 end
 
 function CharacterController:getCharacterId(id)

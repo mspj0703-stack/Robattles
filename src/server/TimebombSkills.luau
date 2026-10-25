@@ -59,6 +59,23 @@ function TimebombSkills:reset(id, now, reason)
 	end
 end
 
+-- 경기 경계(MatchSession): 던진 폭탄·설치물·충전 상태를 폭발 없이 전부 제거한다.
+function TimebombSkills:clearAll(now)
+	local t = now or self._lastNow
+	local owners = {}
+	for _, b in self.bombs._list do
+		if not b.dead then
+			owners[b.owner] = true
+		end
+	end
+	for owner in owners do
+		self.bombs:removeWhere(owner, nil, "MatchBoundary", t)
+	end
+	table.clear(self._charges)
+	table.clear(self._hold)
+	table.clear(self._jumpAt)
+end
+
 local function aimOf(payload, pose)
 	local a = payload and payload.aimDirection
 	return (a and Vec.normalize(a)) or Vec.normalize(pose.forward) or { X = 0, Y = 0, Z = -1 }

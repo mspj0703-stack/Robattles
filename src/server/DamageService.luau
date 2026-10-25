@@ -28,6 +28,9 @@ function DamageService.new(deps)
 	}, DamageService)
 end
 
+-- Optional match policy. Checked before parry/blocker side effects and before any stat mutation.
+function DamageService:setPolicy(policy) self._policy = policy end
+
 function DamageService:register(id, maxHealth)
 	local m = maxHealth or self._cfg.Combat.MaxHealth
 	self._ent[id] = { health = m, maxHealth = m, alive = true }
@@ -125,6 +128,7 @@ function DamageService:applyDamage(req, now)
 	if type(amount) ~= "number" or amount ~= amount or amount <= 0 or amount == math.huge then
 		return { applied = false, reason = "bad_amount" }
 	end
+	if self._policy and not self._policy(req, now) then return { applied = false, reason = "match_damage_disabled" } end
 	local target = self._ent[req.targetId]
 	if not target then
 		return { applied = false, reason = "unknown_target" }
@@ -250,6 +254,7 @@ end
 
 -- 환경 사망(낙사 등): 피해 없이 즉시 사망 처리. 처치 이벤트의 attackerId는 본인이다.
 function DamageService:forceKill(id, now)
+	if self._policy and not self._policy({ attackerId = id, targetId = id, kind = "Environment" }, now) then return false end
 	local e = self._ent[id]
 	if not e or not e.alive then
 		return false

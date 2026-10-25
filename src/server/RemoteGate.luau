@@ -13,6 +13,7 @@ function RemoteGate.new(deps)
 		_cfg = deps.config or Link.shared("Config"),
 		_cooldown = deps.cooldown,
 		_getState = deps.getState,
+		_selectionAllowed = deps.selectionAllowed,
 	}, RemoteGate)
 end
 
@@ -27,6 +28,10 @@ function RemoteGate:check(playerId, remoteName, payload, now)
 	local ok, err = RemoteSpec.validate(remoteName, payload)
 	if not ok then
 		return false, "invalid_payload: " .. tostring(err)
+	end
+	-- Menu/dead selection has no character pose. Still validate schema and rate limit first.
+	if remoteName == "SelectCharacter" and self._selectionAllowed then
+		return self._selectionAllowed(playerId)
 	end
 	local state = self._getState(playerId)
 	if not state then

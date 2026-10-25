@@ -1,0 +1,41 @@
+test_actions_occur_1v1 (test_step1.Simulation.test_actions_occur_1v1) ... ok
+test_actions_occur_ffa12 (test_step1.Simulation.test_actions_occur_ffa12) ... ok
+test_actors_and_hp (test_step1.Simulation.test_actors_and_hp) ... ok
+test_all_styles_and_mode (test_step1.Simulation.test_all_styles_and_mode) ... ok
+test_attack_breaks_protection (test_step1.Simulation.test_attack_breaks_protection) ... ok
+test_attack_magnitude (test_step1.Simulation.test_attack_magnitude) ... ok
+test_batch_one_hundred (test_step1.Simulation.test_batch_one_hundred) ... ok
+test_determinism_1v1 (test_step1.Simulation.test_determinism_1v1) ... ok
+test_determinism_ffa12 (test_step1.Simulation.test_determinism_ffa12) ... ok
+test_dodge (test_step1.Simulation.test_dodge) ... ok
+test_geometry (test_step1.Simulation.test_geometry) ... ok
+test_invalid_args (test_step1.Simulation.test_invalid_args) ... ok
+test_kill_respawn (test_step1.Simulation.test_kill_respawn) ... ok
+test_map_cover_blocking (test_step1.Simulation.test_map_cover_blocking) ... ok
+test_non_sword_cannot_parry (test_step1.Simulation.test_non_sword_cannot_parry) ... ok
+test_parry_counters_once_per_attacker (test_step1.Simulation.test_parry_counters_once_per_attacker) ... ok
+test_parry_front_back (test_step1.Simulation.test_parry_front_back) ... ok
+test_projectile_pass_protected (test_step1.Simulation.test_projectile_pass_protected) ... ok
+test_projectiles_survive_shooter_death (test_step1.Simulation.test_projectiles_survive_shooter_death) ... ok
+test_reload_amount (test_step1.Simulation.test_reload_amount) ... ok
+test_spawn_protect_boundary (test_step1.Simulation.test_spawn_protect_boundary) ... ok
+test_actual_phase1_numbers (test_step1.SourceRules.test_actual_phase1_numbers) ... ok
+test_map_read (test_step1.SourceRules.test_map_read) ... ok
+test_missing_source_fails_closed (test_step1.SourceRules.test_missing_source_fails_closed) ... ok
+test_phase1_manifest (test_step1.SourceRules.test_phase1_manifest) ... FAIL
+
+======================================================================
+FAIL: test_phase1_manifest (test_step1.SourceRules.test_phase1_manifest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/bb5e038c5878/match/RoBattles/tests_sim/test_step1.py", line 33, in test_phase1_manifest
+    self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(),digest,str(path))
+AssertionError: '5e5a82c8882b31e000d1b6915200606e81392fb0f1c90aa8411a8fe34b25ce48' != '358048fe2968f0f14464de884bee35d15ae4abf659eb463a6e9d8bc16cecc4ee'
+- 5e5a82c8882b31e000d1b6915200606e81392fb0f1c90aa8411a8fe34b25ce48
++ 358048fe2968f0f14464de884bee35d15ae4abf659eb463a6e9d8bc16cecc4ee
+ : /workspace/scratch/bb5e038c5878/match/RoBattles/src/client/EffectPlayer.luau
+
+----------------------------------------------------------------------
+Ran 25 tests in 0.872s
+
+FAILED (failures=1)

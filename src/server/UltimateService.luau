@@ -13,6 +13,9 @@ function UltimateService.new(config)
 	return setmetatable({ _cfg = config or Link.shared("Config"), _s = {} }, UltimateService)
 end
 
+function UltimateService:setGainPolicy(policy) self._gainPolicy = policy end
+function UltimateService:setPracticePolicy(policy) self._practicePolicy = policy end
+
 function UltimateService:register(id, characterId)
 	self._s[id] = { gauge = 0, alive = true, active = nil, characterId = characterId, pendingCharacterId = nil }
 end
@@ -66,11 +69,11 @@ function UltimateService:respawn(id)
 end
 
 -- 새 경기 시작: 게이지 초기화, 진행 중 궁극기 종료, 대기 캐릭터 변경은 이월 없이 적용.
-function UltimateService:resetMatch()
+function UltimateService:resetMatch(isReady)
 	for id, s in self._s do
 		self:forceEnd(id, "MatchReset")
 		s.gauge, s.alive = 0, true
-		if s.pendingCharacterId ~= nil then
+		if s.pendingCharacterId ~= nil and (isReady == nil or isReady(id)) then
 			s.characterId = s.pendingCharacterId
 			s.pendingCharacterId = nil
 		end
@@ -88,6 +91,7 @@ function UltimateService:isActive(id)
 end
 
 function UltimateService:_gain(id, amount)
+	if self._gainPolicy and not self._gainPolicy(id) then return end
 	local s = self._s[id]
 	if not s or not s.alive or s.active ~= nil or amount ~= amount or amount <= 0 then
 		return -- 사망·발동 중에는 충전 없음 (ASSUMPTION A17)
@@ -126,13 +130,14 @@ function UltimateService:activate(id, now, def, opts)
 	if opts and opts.canAct == false then
 		return false, "cannot_act"
 	end
-	if s.gauge < self._cfg.Ultimate.Max then
+	local practice = self._practicePolicy and self._practicePolicy(id) == true
+	if not practice and s.gauge < self._cfg.Ultimate.Max then
 		return false, "not_ready"
 	end
 	if type(def) ~= "table" or type(def.duration) ~= "number" or def.duration ~= def.duration or def.duration <= 0 then
 		return false, "bad_def"
 	end
-	s.gauge = math.max(0, s.gauge - self._cfg.Ultimate.Max) -- 정상 사용 시 100% 소모
+	if not practice then s.gauge = math.max(0, s.gauge - self._cfg.Ultimate.Max) end -- practice never changes gauge
 	s.active = { endsAt = now + def.duration, onEnd = def.onEnd, attached = {} }
 	return true, nil
 end
@@ -163,11 +168,14 @@ function UltimateService:forceEnd(id, reason)
 	end
 	local a = s.active
 	s.active = nil
+	self._cleanupErrors = self._cleanupErrors or {}
 	for _, stop in a.attached do
-		stop()
+		local ok, err = pcall(stop)
+		if not ok then table.insert(self._cleanupErrors, tostring(err)) end
 	end
 	if a.onEnd then
-		a.onEnd(reason)
+		local ok, err = pcall(a.onEnd, reason)
+		if not ok then table.insert(self._cleanupErrors, tostring(err)) end
 	end
 	return true
 end

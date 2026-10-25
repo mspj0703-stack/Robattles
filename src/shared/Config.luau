@@ -147,7 +147,12 @@ local Config = {
 	},
 
 	Match = {
-		MaxPlayers = 12, -- 확정 목표
+		MaxPlayers = 12, -- 동시 출전 상한
+		MinPlayers = 2,
+		DurationSeconds = 7 * 60,
+		CountdownSeconds = 5,
+		ResultsSeconds = 12,
+		LowPopulationGraceSeconds = 20,
 		RespawnSeconds = 4, -- 확정: 사망 후 4초 뒤 부활
 		RespawnProtectionSeconds = 2, -- 확정: 부활 후 2초 피해 면역(공격 행동 시작 시 즉시 해제)
 		MaxLoadsPerWindow = 6, -- ASSUMPTION A57: 무한 리스폰 방지 — 이 창(WindowSeconds) 안의 캐릭터 로드 상한

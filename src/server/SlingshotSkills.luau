@@ -64,6 +64,20 @@ function SlingshotSkills:reset(id, now, _reason)
 	self._d.setSlow(id, 0, 1)
 end
 
+-- 경기 경계(MatchSession): 비행 중인 Bullseye 탄·충전·표식·조준을 모두 버린다.
+function SlingshotSkills:clearAll(now)
+	self._shots = {}
+	table.clear(self._charge)
+	table.clear(self._ult)
+	table.clear(self._marks)
+	table.clear(self._counts)
+	table.clear(self._tags)
+	for id in self._life do
+		self._life[id] += 1
+		self._d.setSlow(id, 0, 1)
+	end
+end
+
 local function aimOf(payload, pose)
 	local a = payload and payload.aimDirection
 	return (a and Vec.normalize(a)) or Vec.normalize(pose.forward) or { X = 0, Y = 0, Z = -1 }

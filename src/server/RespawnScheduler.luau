@@ -46,12 +46,41 @@ end
 function RespawnScheduler:onDeath(id, now)
 	self:register(id)
 	local s = self._s[id]
-	if s.dueAt ~= nil or s.loading or s.hung then
+	if s.cancelled or s.dueAt ~= nil or s.loading or s.hung then
 		return false
 	end
 	s.dueAt = now + self._cfg.Match.RespawnSeconds
 	s.attempts = 0
+	s.exhausted = nil
 	return true
+end
+
+-- Match transitions cannot cancel LoadCharacterAsync. Retain its in-flight lock.
+function RespawnScheduler:cancel(id)
+	local s = self._s[id]; if not s then return end
+	s.cancelled = true; s.dueAt = nil
+	if not s.inFlight then s.loading = false; s.returnedAt = nil; s.hung = nil end
+end
+
+function RespawnScheduler:resume(id)
+	local s = self._s[id]
+	if s and not s.inFlight and not s.loading then s.cancelled = false end
+end
+
+function RespawnScheduler:isExhausted(id)
+	local s = self._s[id]; return s ~= nil and s.exhausted == true
+end
+
+-- Explicit user retry only, after the bounded attempt series has stopped.
+function RespawnScheduler:retryExhausted(id, now)
+	local s = self._s[id]
+	if not s or not s.exhausted or s.inFlight or s.loading then return false end
+	s.exhausted = nil; s.attempts = 0; s.cancelled = false; s.dueAt = now
+	return true
+end
+
+function RespawnScheduler:isLoading(id)
+	local s = self._s[id]; return s ~= nil and (s.loading or s.inFlight)
 end
 
 function RespawnScheduler:getDueAt(id)
@@ -78,7 +107,7 @@ end
 function RespawnScheduler:requestInitial(id, now)
 	self:register(id)
 	local s = self._s[id]
-	if s.dueAt == nil and not s.loading and not s.hung then
+	if not s.cancelled and not s.exhausted and s.dueAt == nil and not s.loading and not s.hung then
 		s.dueAt = now
 	end
 end
@@ -90,6 +119,7 @@ function RespawnScheduler:_fail(s, id, now)
 	s.returnedAt = nil
 	s.attempts += 1
 	if s.attempts >= self._cfg.Match.MaxLoadAttempts then
+		s.exhausted = true
 		s.dueAt = nil
 		self:_log("respawn_gave_up", id, { attempts = s.attempts })
 		return false
@@ -125,7 +155,7 @@ function RespawnScheduler:due(now)
 		end
 	end
 	for id, s in self._s do
-		if s.dueAt ~= nil and not s.loading and not s.inFlight and now >= s.dueAt then
+		if not s.cancelled and s.dueAt ~= nil and not s.loading and not s.inFlight and now >= s.dueAt then
 			local recent = {}
 			for _, t in s.loads do
 				if now - t < c.LoadWindowSeconds then
@@ -158,6 +188,10 @@ function RespawnScheduler:finishCall(id, attemptId, ok, now)
 		return false
 	end
 	s.inFlight = false
+	if s.cancelled then
+		s.loading = false; s.returnedAt = nil; s.dueAt = nil; s.hung = nil
+		return true
+	end
 	if ok then
 		s.returnedAt = now -- 아직 loading: CharacterAdded 를 기다린다(타임아웃은 due 가 처리). 이미 onSpawned 가 처리됐다면 loading=false
 	else
@@ -183,6 +217,7 @@ function RespawnScheduler:onSpawned(id)
 		return false
 	end
 	local expected = s.loading or s.dueAt ~= nil or s.hung == true
+	s.exhausted = nil
 	s.dueAt, s.loading, s.attempts, s.returnedAt, s.hung = nil, false, 0, nil, nil
 	-- inFlight 는 풀지 않는다: 호출이 아직 실행 중이면 finishCall 이 풀 때까지 새 호출을 막는다.
 	return expected

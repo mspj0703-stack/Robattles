@@ -79,6 +79,11 @@ function SuperballSkills:reset(id, now, _reason)
 	self.balls:removeWhere(id, nil, "OwnerReset", now or self._lastNow)
 end
 
+-- 경기 경계(MatchSession): 모든 볼을 제거한다(소유자 reset 으로 이미 지워지지만 남은 것이 없도록 한 번 더).
+function SuperballSkills:clearAll(now)
+	self.balls:clearAll(now or self._lastNow)
+end
+
 -- ── 볼 총량(12) ─────────────────────────────────────────────
 -- 일반 볼이 들어갈 수 있는 슬롯 수(궁극기 볼은 밀어내지 못한다).
 function SuperballSkills:_normalSlots(id)

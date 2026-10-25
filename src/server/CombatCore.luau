@@ -45,14 +45,14 @@ function CombatCore.new(config)
 		return self.ultimate:setCharacter(id, characterId)
 	end
 	-- 새 경기: 체력·회피·상태·쿨타임·궁극기 게이지 전부 초기화.
-	function core:resetMatch()
+	function core:resetMatch(isReady)
 		for id in self.damage._ent do
 			self.damage:respawn(id)
 			self.dodge:reset(id)
 			self.status:clear(id)
 			self.cooldown:clearEntity(id)
 		end
-		self.ultimate:resetMatch()
+		self.ultimate:resetMatch(isReady)
 	end
 	function core:removePlayer(id)
 		self.damage:remove(id)

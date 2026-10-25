@@ -4,14 +4,20 @@ local ServerRouter = {}
 ServerRouter.__index = ServerRouter
 
 function ServerRouter.new(deps)
-	return setmetatable({ _gate = deps.gate, _controller = deps.controller }, ServerRouter)
+	return setmetatable({ _gate = deps.gate, _controller = deps.controller, _match = deps.match }, ServerRouter)
 end
 
 -- 반환: ok, info | reason
 function ServerRouter:dispatch(playerId, remoteName, payload, now)
+	if self._match then self._match:updatePhase(now) end
 	local ok, reason = self._gate:check(playerId, remoteName, payload, now)
 	if not ok then
 		return false, reason
+	end
+	if self._match then
+		local allowed, why = self._match.flow:canAct(playerId, remoteName, payload)
+		if not allowed then return false, why end
+		if remoteName == "SelectCharacter" then return self._match:select(playerId, payload.characterId, now) end
 	end
 	local c = self._controller
 	if remoteName == "Attack" then
