@@ -3,7 +3,7 @@
 local State = {}
 State.__index = State
 function State.new(myId, respawnSeconds)
-	return setmetatable({myId=myId,respawnSeconds=respawnSeconds,page="Menu",rows={},feed={},lastTime=-math.huge,
+	return setmetatable({pendingKills={},myId=myId,respawnSeconds=respawnSeconds,page="Menu",rows={},feed={},lastTime=-math.huge,
 		lastLifeTime=-math.huge,preferences={sensitivity=1,scale=1,sfx=1,music=0.6,damageNumbers=true,shake=true}},State)
 end
 function State:snapshot(snap, receivedAt)
@@ -29,6 +29,7 @@ function State:snapshot(snap, receivedAt)
 	if m and type(m.matchId)=="number" and type(prevId)=="number" and m.matchId~=prevId then
 		self.feed={}; self.killer=nil; self.lastKillAt=nil; self.lastDamage=nil
 	end
+	self:_releasePending(receivedAt)
 	return true
 end
 function State:request(id, now)
@@ -42,31 +43,59 @@ function State:tick(now)
 	end
 	while self.feed[1] and now-self.feed[1].receivedAt>8 do table.remove(self.feed,1) end
 end
+function State:_applyKill(e,now)
+	local entry
+	for _,f in self.feed do
+		if f.id==e.targetId and not f.attackerId and math.abs(f.receivedAt-now)<1 then entry=f break end
+	end
+	if entry then entry.attackerId=e.attackerId else
+		table.insert(self.feed,{id=e.targetId,attackerId=e.attackerId,time=e.time,receivedAt=now})
+		if #self.feed>5 then table.remove(self.feed,1) end
+	end
+	if e.targetId==self.myId then self.killer={attackerId=e.attackerId,kind=e.kind,receivedAt=now} end
+	if e.attackerId==self.myId then self.lastKillAt=now end
+end
+-- Releases held future-round kills once their snapshot arrives; drops ones that turned stale or waited too long.
+function State:_releasePending(now)
+	local cur=self.match and self.match.matchId
+	if type(cur)~="number" then return end
+	local keep={}
+	for _,p in self.pendingKills do
+		local id=p.e.matchId
+		if now-p.receivedAt>5 or id<cur then -- expired or provably stale
+		elseif id==cur then self:_applyKill(p.e,now)
+		else table.insert(keep,p) end
+	end
+	self.pendingKills=keep
+end
 -- A KillConfirmed belongs to the current round unless the server stamped an OLDER matchId. A newer id (event ahead of the
 -- snapshot) or a missing id is accepted: only provably stale events are dropped.
+function State:classifyMatchEvent(e)
+	local cur=self.match and self.match.matchId
+	if type(cur)~="number" or type(e)~="table" or type(e.matchId)~="number" then return "current" end
+	return e.matchId<cur and "stale" or e.matchId>cur and "future" or "current"
+end
 function State:currentMatchEvent(e)
 	local cur=self.match and self.match.matchId
 	if type(cur)~="number" or type(e)~="table" or type(e.matchId)~="number" then return true end
-	return e.matchId>=cur
+	return e.matchId==cur
 end
 function State:feedback(e, now)
 	if type(e)~="table" then return end
 	if e.type=="Rejected" and e.remote=="SelectCharacter" and self.requested then
 		self.requested=nil; self.selectionMessage="서버가 선택을 거부했습니다"
 	elseif e.type=="KillConfirmed" then
-		-- Server-confirmed kill credit. Upgrade the matching "Died" line (same victim, same moment) instead of duplicating it.
+		-- Round identity: older id = late event of a finished round (dropped); newer id = the event outran its snapshot,
+		-- so it is held until a snapshot of that round arrives; same/unknown id = applied now.
 		if type(e.targetId)~="number" or type(e.attackerId)~="number" then return end
-		if not self:currentMatchEvent(e) then return end
-		local entry
-		for _,f in self.feed do
-			if f.id==e.targetId and not f.attackerId and math.abs(f.receivedAt-now)<1 then entry=f break end
+		local c=self:classifyMatchEvent(e)
+		if c=="stale" then return end
+		if c=="future" then
+			table.insert(self.pendingKills,{e=e,receivedAt=now})
+			while #self.pendingKills>8 do table.remove(self.pendingKills,1) end
+			return
 		end
-		if entry then entry.attackerId=e.attackerId else
-			table.insert(self.feed,{id=e.targetId,attackerId=e.attackerId,time=e.time,receivedAt=now})
-			if #self.feed>5 then table.remove(self.feed,1) end
-		end
-		if e.targetId==self.myId then self.killer={attackerId=e.attackerId,kind=e.kind,receivedAt=now} end
-		if e.attackerId==self.myId then self.lastKillAt=now end
+		self:_applyKill(e,now)
 	elseif e.type=="Died" then
 		if type(e.time)~="number" then return end
 		local dup=false

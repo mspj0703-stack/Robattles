@@ -70,3 +70,9 @@ GPT ZIP(`RoBattles_Alpha_MatchFlow_Implementation`)은 `snapshot/ui-integration`
 
 기존 목록 그대로 유지: `docs/MATCH_FLOW_STUDIO_P0.md`(P0-1~), `docs/ui-gpt/UI_STUDIO_CHECKLIST.md`, `docs/STUDIO_TEST_PLAN.md` S1~S124. 이번 통합에서 추가: **S125~S136** (`docs/STUDIO_TEST_PLAN.md`).
 최소 2클라이언트로 시작해 12클라이언트까지 확장한다.
+
+## 7. 후속 수정 (GPT 검수 반영)
+- 시뮬레이션 기준선 분리: `docs/SIM_BASELINES.md`.
+- 결과 화면은 메뉴/설정/캐릭터 화면이 열려 있어도 RESULTS 진입 시 표시되고, 종료 후 원래 화면으로 복귀한다.
+- `KillConfirmed.matchId`: 이전 경기 → 폐기, 같은 경기/`matchId` 없음 → 즉시 적용, **미래 경기 → 해당 경기 스냅샷 도착까지 보류(최대 8건, 5초)**. 경기 전환 시 킬 피드·처치자 초기화. KO! 토스트는 `State` 가 확정한 이벤트로만 표시.
+

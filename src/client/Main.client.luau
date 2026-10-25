@@ -194,9 +194,6 @@ end)
 local lastCorrection
 remotes:WaitForChild("Feedback").OnClientEvent:Connect(function(event)
 	app:onFeedback(event, now())
-	if event.type == "KillConfirmed" and event.attackerId == myId and app.state:currentMatchEvent(event) then
-		hud:showToast("KO!", now(), 1)
-	end
 	-- 서버 위치 보정(A41): 서버가 되돌린 위치로 즉시 이동하고 진행 중이던 회피는 취소한다.
 	if MovementModel.acceptCorrection(event, now(), lastCorrection, 1) == "snap" then
 		lastCorrection = event.time

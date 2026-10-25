@@ -252,6 +252,11 @@ function App:onFeedback(event,now)
 end
 function App:render(model,now)
 	self.state:tick(now)
+	-- KO! toast for a server-confirmed kill of the CURRENT round (State filters stale rounds and holds early ones).
+	if self.state.lastKillAt and self.state.lastKillAt~=self.shownKillAt then
+		self.shownKillAt=self.state.lastKillAt
+		if now-self.state.lastKillAt<2 then self.hud:showToast("KO!",now,1) end
+	end
 	if model and self.state.snap then
 		model.alive=self.state:status(now)=="Alive"
 		if model.ammo and self.state.snap.ammo then model.ammo.empty=self.state.snap.ammo.cur<=0 end

@@ -79,5 +79,12 @@ test("stale KillConfirmed from the previous match does not reach the next round 
 	app:onFeedback({type="KillConfirmed",matchId=6,attackerId=99,targetId=7,time=259},260);app:onFeedback({type="Died",playerId=7,time=260.5},260.5)
 	local d=msnap(260.6,false,"ACTIVE","Dead",{matchId=7});d.match.player.respawnAt=264.5;Mock.time=260.6;render(d)
 	assert(app.deathInfo.Text:find("환경"));assert(not app.hud.feed.Text:find("Player 99")) end)
+test("KO toast: current-round kill shows it, stale does not, future waits for its snapshot",function()
+	local function ko() return app.hud.toast.Visible==true and app.hud.toast.Text=="KO!" end
+	local function act(t,id,extra) local x=msnap(t,true,"ACTIVE","Participating");x.match.matchId=id;Mock.time=t;render(x) end
+	act(300,10);app:onFeedback({type="KillConfirmed",matchId=10,attackerId=7,targetId=50,time=300},300);act(300.1,10);assert(ko());app.hud:clearTransient()
+	app:onFeedback({type="KillConfirmed",matchId=9,attackerId=7,targetId=51,time=301},301);act(301.1,10);assert(not ko())
+	app:onFeedback({type="KillConfirmed",matchId=11,attackerId=7,targetId=52,time=302},302);act(302.1,10);assert(not ko())
+	act(302.5,11);assert(ko());assert(app.hud.feed.Text:find("▶")) end)
 test("destroy restores core list and disconnects owned events",function() app:destroy();assert(app.gui.Destroyed);assert(Mock.services.StarterGui.enabled);assert(Mock.services.ContextActionService.bound.RoBattlesUIModal==nil) end)
 print("GUI mock: "..passed.." passed / 0 failed (NOT Studio)")
