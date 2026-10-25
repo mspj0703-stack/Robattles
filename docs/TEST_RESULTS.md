@@ -1,9 +1,11 @@
 # 자동 테스트 결과 (Luau CLI, 순수 로직)
 
-실행 시각: 2026-10-25 21:08
+실행 시각: 2026-10-25 21:19
 종료 코드: 0
 
 ```
+[12인] 시뮬레이션 40s, 이벤트 2019건(초당 51.0), 최대 투사체 6, 최대 폭탄 8, 최대 볼 33
+[12인] 이벤트 종류별: BallBounce=19 BallEnd=177 BallHit=128 BallMode=92 BallSpawn=187 BombEnd=77 BombExplode=77 BombLand=44 BombSpawn=77 CharSkill=358 Died=55 Ended=176 Explosion=13 Hit=137 Parry=4 ProtectionEnded=46 Respawned=55 Spawned=176 Swing=20 SwordSkill=59 Ultimate=42
 PASS  Config: 확정 규칙 > 이동 속도 17/23, 1단 점프
 PASS  Config: 확정 규칙 > 회피 2회·충전 5초·무적 0.15초·공중 허용
 PASS  Config: 확정 규칙 > 키 설정: Ctrl 달리기 / Shift 회피 / F 궁극기
@@ -743,6 +745,17 @@ PASS  SLINGSHOT 클라이언트 로직(입력·궤적·큐) > 서버 탄 정의 
 PASS  SLINGSHOT 다인·노출 > 두 SLINGSHOT 의 충전은 독립
 PASS  SLINGSHOT 다인·노출 > HUD 스냅샷: 충전 중 chargeFrac 제공
 PASS  SLINGSHOT 다인·노출 > 12명 동시 충전·발사에서도 오류 없이 처리된다
+PASS  5캐릭터 선택·HP > 캐릭터별 최대 HP(SWORD 110 / PAINTBALL 95 / SUPERBALL 100 / TIMEBOMB 105 / SLINGSHOT 100)
+PASS  5캐릭터 선택·HP > RemoteSpec 선택 목록 = 실제 5캐릭터(그 외 id 거부, GUNNER 없음)
+PASS  5캐릭터 선택·HP > 25가지 전환(X→Y): 선택은 다음 리스폰부터, 리스폰 후 HP·캐릭터·HUD 가 새 캐릭터 기준
+PASS  5캐릭터 선택·HP > 선택 대기 중 게이지 이월 규칙(min(기존, 40))은 유지된다
+PASS  사망·리스폰·전환 중 남은 상태 초기화 > 5캐릭터 전부: 키트 전체를 누른 직후 사망 → 늦은 Release 거부, 이동속도·보호·HUD 정상
+PASS  사망·리스폰·전환 중 남은 상태 초기화 > 사망 후 60초: 투사체·볼·폭탄이 모두 정리된다(5캐릭터 × 사망 시점)
+PASS  사망·리스폰·전환 중 남은 상태 초기화 > 퇴장(removePlayer): 소유 객체·표식·충전이 제거되고 이후 업데이트에서 오류가 없다
+PASS  사망·리스폰·전환 중 남은 상태 초기화 > 캐릭터 전환 직후(다음 리스폰): 이전 캐릭터 모듈 상태가 새 캐릭터 입력에 영향 없다
+PASS  사망·리스폰·전환 중 남은 상태 초기화 > 위조·지연 Remote: Press 없는 Release / 알 수 없는 슬롯 / 중복 Release 는 오류 없이 거부, 쿨타임·보호 불변
+PASS  12인 동시 사용 시나리오 > 12명(5캐릭터 혼합)이 키트 전체를 반복 사용: 객체 상한 유지, 이벤트 수 상한, 오류 없음
+PASS  12인 동시 사용 시나리오 > 12명 전원 퇴장: 상태 테이블이 비워지고 이후 update 는 빠르게 끝난다
 PASS  EffectsModel: 이벤트 → 연출 큐 > Swing → sword.slash (내 것 mine=true)
 PASS  EffectsModel: 이벤트 → 연출 큐 > 패링 시작/성공/반격 표시
 PASS  EffectsModel: 이벤트 → 연출 큐 > Damaged → 피격 번쩍임 + 충격 연출, 공격자 관점 mine 구분
@@ -795,5 +808,5 @@ PASS  통합: 서버/클라이언트 동기화 > Correct 이벤트 수용: 최�
 PASS  통합: 서버/클라이언트 동기화 > dodgeVelocity: 서버가 줄인 거리 반영, 0이면 이동 없음, 기본 거리 초과 값은 제한
 PASS  통합: 서버/클라이언트 동기화 > 서버 보정 → 같은 위치 재관찰은 ok: 보정이 반복 루프를 만들지 않는다
 
-합계: 790 통과 / 0 실패 / 790 전체
+합계: 801 통과 / 0 실패 / 801 전체
 ```
