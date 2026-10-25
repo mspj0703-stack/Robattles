@@ -23,7 +23,12 @@ function State:snapshot(snap, receivedAt)
 	local ui=snap.ui
 	local m=type(snap.match)=="table" and snap.match or (type(ui)=="table" and ui.version==1 and ui.match or nil)
 	if type(m)=="table" and m.phase=="Results" then m=setmetatable({phase="RESULTS"},{__index=m}) end -- legacy spelling
+	-- A new match id means a new round: drop kill-feed/killer state so late events of the previous round cannot leak in.
+	local prevId=self.match and self.match.matchId
 	self.match=m
+	if m and type(m.matchId)=="number" and type(prevId)=="number" and m.matchId~=prevId then
+		self.feed={}; self.killer=nil; self.lastKillAt=nil; self.lastDamage=nil
+	end
 	return true
 end
 function State:request(id, now)
@@ -37,6 +42,13 @@ function State:tick(now)
 	end
 	while self.feed[1] and now-self.feed[1].receivedAt>8 do table.remove(self.feed,1) end
 end
+-- A KillConfirmed belongs to the current round unless the server stamped an OLDER matchId. A newer id (event ahead of the
+-- snapshot) or a missing id is accepted: only provably stale events are dropped.
+function State:currentMatchEvent(e)
+	local cur=self.match and self.match.matchId
+	if type(cur)~="number" or type(e)~="table" or type(e.matchId)~="number" then return true end
+	return e.matchId>=cur
+end
 function State:feedback(e, now)
 	if type(e)~="table" then return end
 	if e.type=="Rejected" and e.remote=="SelectCharacter" and self.requested then
@@ -44,6 +56,7 @@ function State:feedback(e, now)
 	elseif e.type=="KillConfirmed" then
 		-- Server-confirmed kill credit. Upgrade the matching "Died" line (same victim, same moment) instead of duplicating it.
 		if type(e.targetId)~="number" or type(e.attackerId)~="number" then return end
+		if not self:currentMatchEvent(e) then return end
 		local entry
 		for _,f in self.feed do
 			if f.id==e.targetId and not f.attackerId and math.abs(f.receivedAt-now)<1 then entry=f break end

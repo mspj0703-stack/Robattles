@@ -137,9 +137,32 @@ end
 function App:isBlocking()
 	return self.state.page~="Battle" or self.state:status(workspace:GetServerTimeNow())~="Alive"
 end
+-- RESULTS must be seen even if a menu/settings/character page is open when the round ends: close it (remembering where the
+-- player was) and show the results. When the results phase ends, return to the remembered page if the player did not navigate.
+function App:syncResultsPage(status)
+	local entering=status=="Results" and self.prevStatus~="Results"
+	self.prevStatus=status
+	if status=="Results" then
+		if entering and self.state.page~="Battle" and not self.pageBeforeResults then
+			self.pageBeforeResults=self.state.page
+			self.settings.root.Visible=false; self.settings.waiting=nil
+			self.state.page="Battle"
+			self.autoClosedForResults=true
+		end
+	elseif self.pageBeforeResults then
+		local back=self.pageBeforeResults
+		self.pageBeforeResults=nil
+		if self.autoClosedForResults and self.state.page=="Battle" and status~="Menu" then
+			self.state.page=back
+			self.settings.root.Visible=back=="Settings"
+		end
+		self.autoClosedForResults=false
+	end
+end
 function App:updateVisibility()
 	local now=workspace:GetServerTimeNow()
 	local status=self.state:status(now)
+	self:syncResultsPage(status)
 	local page=self.state.page
 	self.menu.Visible=page=="Menu"
 	self.characterPage.Visible=page=="Characters"
