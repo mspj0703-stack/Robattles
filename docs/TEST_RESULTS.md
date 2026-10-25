@@ -1,6 +1,6 @@
 # 자동 테스트 결과 (Luau CLI, 순수 로직)
 
-실행 시각: 2026-10-25 21:28
+실행 시각: 2026-10-25 21:59
 종료 코드: 0
 
 ```
@@ -807,6 +807,63 @@ PASS  통합: 이동 검증 오탐 방지(실제 맵) > 광장 가로지르기 �
 PASS  통합: 서버/클라이언트 동기화 > Correct 이벤트 수용: 최근·미수용 시각·유효 좌표만 snap
 PASS  통합: 서버/클라이언트 동기화 > dodgeVelocity: 서버가 줄인 거리 반영, 0이면 이동 없음, 기본 거리 초과 값은 제한
 PASS  통합: 서버/클라이언트 동기화 > 서버 보정 → 같은 위치 재관찰은 ok: 보정이 반복 루프를 만들지 않는다
+PASS  MatchFlow confirmed rules > 12 players, 2 minimum, 420/5/4/2/12/20 seconds
+PASS  MatchFlow confirmed rules > MENU is individual and not a server phase
+PASS  MatchFlow confirmed rules > one selected ready player waits indefinitely
+PASS  MatchFlow confirmed rules > selection without a loaded avatar cannot start countdown
+PASS  MatchFlow confirmed rules > five-second authoritative countdown
+PASS  MatchFlow confirmed rules > countdown cancels on departure
+PASS  MatchFlow confirmed rules > countdown cancels when player falls; full countdown restarts
+PASS  MatchFlow confirmed rules > 12 selected cap includes loading slots
+PASS  MatchFlow confirmed rules > midmatch loaded selection participates immediately
+PASS  MatchFlow confirmed rules > dead participants still count toward minimum
+PASS  MatchFlow confirmed rules > one player starts 20-second grace then cancellation
+PASS  MatchFlow confirmed rules > zero players also completes grace
+PASS  MatchFlow confirmed rules > population recovery cancels grace; next shortage gets a new deadline
+PASS  MatchFlow confirmed rules > round ends exactly at seven minutes
+PASS  MatchFlow confirmed rules > earliest deadline wins after a delayed tick
+PASS  MatchFlow confirmed rules > damage is disabled at deadline before a Heartbeat transition
+PASS  MatchFlow confirmed rules > results last full 12 seconds then automatic countdown
+PASS  MatchFlow confirmed rules > results return to waiting if insufficient players
+PASS  MatchFlow confirmed rules > rank 1,1,3 for exact ties; deaths break KO ties
+PASS  MatchFlow confirmed rules > results are frozen even if returned tables are modified or players leave
+PASS  MatchFlow confirmed rules > new round resets scores and old result data
+PASS  MatchFlow confirmed rules > rejoining player preserves round score, prevents death reset exploit
+PASS  MatchFlow confirmed rules > practice and results never score; duplicate death is ignored
+PASS  MatchFlow confirmed rules > practice actions allowed only after selection and spawn; results rejects all skills
+PASS  MatchScope stale work > old round callback cannot execute after invalidation
+PASS  MatchScope stale work > reconnect cannot resurrect old connection token
+PASS  MatchScope stale work > one failing cleanup cannot prevent other timers from cancelling
+PASS  MatchScope stale work > leaving cancels only owned work
+PASS  MatchSession real combat service integration > no initial spawn before explicit validated selection
+PASS  MatchSession real combat service integration > selection still enforces schema and registration without avatar
+PASS  MatchSession real combat service integration > practice swings animate but damage, KO, deaths and all charge stay zero
+PASS  MatchSession real combat service integration > practice policy runs before parry and counter side effects
+PASS  MatchSession real combat service integration > practice ultimate may run without changing gauge; placeholder skills remain unchanged
+PASS  MatchSession real combat service integration > practice fall recovers physical player without emitting scored kill
+PASS  MatchSession real combat service integration > active kills score once and preserve combat damage/ultimate rules
+PASS  MatchSession real combat service integration > four-second respawn and two-second shield remain server-owned
+PASS  MatchSession real combat service integration > character selection while dead applies next respawn and carry cap remains 40
+PASS  MatchSession real combat service integration > round start resets practice combo, reload, HP and gauge
+PASS  MatchSession real combat service integration > round boundary cancels placed bombs without detonation
+PASS  MatchSession real combat service integration > late in-flight spawn after round end cannot join or overlap a new load
+PASS  MatchSession real combat service integration > results prevent new skills, damage and timed charge
+PASS  MatchSession real combat service integration > join before grace expiry rescues match; late join does not
+PASS  MatchSession real combat service integration > old connection completion ignored after leave and rejoin
+PASS  MatchSession real combat service integration > spawn gate epochs cannot collide across reconnect
+PASS  MatchSession real combat service integration > server snapshot exposes match/rank/death/selection without replacing character UI data
+PASS  MatchSession real combat service integration > results allow selection but defer first physical spawn until next waiting
+PASS  MatchSession real combat service integration > stale match cast guard cannot spawn effects in next round
+PASS  MatchSession real combat service integration > throwing ultimate cleanup cannot strand match transition
+PASS  MatchSession real combat service integration > exhausted spawn attempts do not restart every Heartbeat; selection explicitly retries
+PASS  MatchSession real combat service integration > pending dead character selection survives a round boundary until physical respawn
+PASS  MatchSession real combat service integration > lethal damage credits once even with synchronous external death reflection
+PASS  MatchSession real combat service integration > accepted spawn ticket is single-use; later unrequested avatar cannot reuse it
+PASS  MatchSession real combat service integration > practice physical death cancels ultimate attachments without scored death
+PASS  MatchSession real combat service integration > all five characters: RESULTS rejects every combat remote incl. Release, Aim and Reload; next round starts clean
+PASS  경기 경계 × 5캐릭터 > 모든 캐릭터의 스킬을 누른 뒤 경계 정리 → 폭탄·볼·탄·투사체 0, 이후 시간이 흘러도 효과 없음
+PASS  경기 경계 × 5캐릭터 > 경계 후 늦게 도착한 Release 는 어떤 캐릭터에서도 투사체·폭탄·볼·탄을 만들지 못한다
+PASS  경기 경계 × 5캐릭터 > clearAll 은 반복 호출해도 안전하다
 
-합계: 801 통과 / 0 실패 / 801 전체
+합계: 858 통과 / 0 실패 / 858 전체
 ```

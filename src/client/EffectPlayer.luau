@@ -72,6 +72,7 @@ function EffectPlayer:_sound(soundName, parent)
 	s.SoundId = def.id
 	s.Volume = def.volume or 0.5
 	s.RollOffMaxDistance = 80
+	s.SoundGroup = game:GetService("SoundService"):FindFirstChild("RoBattlesSFX") -- UI 효과음 볼륨 설정과 연동
 	s.Parent = parent
 	s:Play()
 	Debris:AddItem(s, 3)

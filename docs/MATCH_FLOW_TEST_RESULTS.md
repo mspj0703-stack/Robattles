@@ -1,3 +1,5 @@
+> 통합 전(GPT 단독) 기준 결과다. 통합 후 결과는 `docs/INTEGRATION_ALPHA1.md` 를 본다.
+
 # 검증 결과 — 2026-10-25
 
 **전체: 634 PASS / 1 FAIL. 전체 회귀가 모두 통과한 상태는 아니다.** Studio/실제 엔진 검증은 NOT RUN.

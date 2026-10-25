@@ -13,8 +13,8 @@ created = c2s | s2c
 router = rd("src/server/ServerRouter.luau")
 routed = set(re.findall(r'remoteName == "([A-Za-z]+)"', router))
 client = rd("src/client/Main.client.luau")
-used = set(re.findall(r"remotes\.([A-Z][A-Za-z]+)", client)) | set(re.findall(r'WaitForChild\("([A-Z][A-Za-z]+)"\)', client)) - {"RoBattles", "Remotes"}
-dyn = set(re.findall(r'remote = "([A-Za-z]+)"', rd("src/client/Logic/InputModel.luau"))) if os.path.exists(os.path.join(R, "src/client/Logic/InputModel.luau")) else set()
+used = set(re.findall(r"remotes\.([A-Z][A-Za-z]+)", client)) | set(re.findall(r'remotes:WaitForChild\("([A-Z][A-Za-z]+)"\)', client)) - {"RoBattles", "Remotes"}
+dyn = set(re.findall(r'remote = "([A-Za-z]+)"', rd("src/client/Logic/InputState.luau"))) if os.path.exists(os.path.join(R, "src/client/Logic/InputState.luau")) else set()
 bad = 0
 def chk(ok, msg):
     global bad

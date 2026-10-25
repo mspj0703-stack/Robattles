@@ -50,3 +50,7 @@ HUD `extra`: SUPERBALL `balls/ballCap/chargeFrac/cycloneUntil`, TIMEBOMB `placed
 | UI (GPT Work) | `Main.client.luau`, `HudView.luau`, `Logic/HudModel.luau`, `Logic/InputState.luau`, `Logic/Crosshairs.luau`, `SettingsView.luau` | 위 1절 계약을 따를 것. `InputState.setCharacter` 인자는 5개(`..., chargePrimary, localAim`). `localEffect` 종류에 `AimMode` 추가 |
 | 애니메이션 (`phase2/animation`) | `Main.client.luau`(Feedback 수신부), `EffectPlayer.luau`, `Logic/EffectsModel.luau`, `Data/EffectCatalog.luau` | 기준본은 d154560(SLINGSHOT 이전). 합칠 때 `EffectsModel.PROJECTILE_CUES`/`EffectCatalog.Cues` 에 sling.* 가 추가돼 있음 |
 | 경기 진행 | `Main.server.luau`, `CharacterController.luau`(respawn/handleDeath 경로), `RemoteSpec.luau` | 캐릭터 선택은 다음 리스폰부터 적용되는 규칙 유지. `SelectCharacter` oneOf 가 유일한 선택 목록 |
+
+## Alpha 1.0 통합 상태 (최신)
+UI 는 `src/client/UI/*`(App/State/Catalog/Components/Preview/Tokens)로 통합되었고 `Main.client` 는 단일 `RoBattlesUI` ScreenGui 만 만든다.
+상세 연결·충돌 해결·남은 결함은 `docs/INTEGRATION_ALPHA1.md`, 원본 GPT 문서는 `docs/ui-gpt/` 에 보존했다. 위 이전 설명과 충돌하면 통합 문서가 우선한다.

@@ -186,5 +186,30 @@ T.describe("MatchSession real combat service integration",function()
 		s:environmentDeath("a",2);T.expect(stopped);T.expect(not core.ultimate:isActive("a"));T.expectEqual(s.flow:snapshot("a",2).player.deaths,0)
 	end)
 
+	T.it("all five characters: RESULTS rejects every combat remote incl. Release, Aim and Reload; next round starts clean",function()
+		local chars={"SWORD","PAINTBALL","SUPERBALL","TIMEBOMB","SLINGSHOT"}
+		local s,core,c,ps,q,add,spawn,router=setup()
+		local ids={"a","b","c","d","e"}
+		for i,id in ids do add(id,chars[i]);s:select(id,chars[i],0);spawn(id,0) end
+		s:tick(0);s:tick(5);T.expectEqual(s.flow.phase,"ACTIVE")
+		for i,id in ids do -- leave charge/placed/ball state behind, then end the round
+			c:handleAttack(id,{action="Primary",aimOrigin=v(0,0,0),aimDirection=v(0,0,1),clientTime=6,phase="Press"},6)
+			c:handleSkill(id,{slot=2,aimOrigin=v(0,0,0),aimDirection=v(0,0,1),clientTime=6,phase="Press"},6.1)
+		end
+		s:tick(430);T.expectEqual(s.flow.phase,"RESULTS")
+		for i,id in ids do
+			T.expect(not router:dispatch(id,"Attack",{action="Primary",aimOrigin=v(0,0,0),aimDirection=v(0,0,1),clientTime=431,phase="Release"},431),chars[i].." Attack Release")
+			T.expect(not router:dispatch(id,"Skill",{slot=2,aimOrigin=v(0,0,0),aimDirection=v(0,0,1),clientTime=431,phase="Release"},431),chars[i].." Skill Release")
+			T.expect(not router:dispatch(id,"Aim",{aimOrigin=v(0,0,0),aimDirection=v(0,0,1),clientTime=431},431),chars[i].." Aim")
+			T.expect(not router:dispatch(id,"Reload",{},431),chars[i].." Reload")
+		end
+		T.expectEqual(ps:getActiveCount(),0,"투사체 잔존")
+		for i,id in ids do
+			local impl=c._impl[chars[i]] or {}
+			if impl.bombs then T.expectEqual(impl.bombs:count(),0,chars[i].." 폭탄") end
+			if impl.balls then T.expectEqual(impl.balls:count(),0,chars[i].." 볼") end
+			T.expectEqual(core.ultimate:getGauge(id),0,chars[i].." 게이지")
+		end
+	end)
 end)
 return true

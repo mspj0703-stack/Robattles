@@ -20,21 +20,22 @@ local EffectsModel = require(script.Parent.Logic.EffectsModel)
 local EffectPlayer = require(script.Parent.EffectPlayer)
 local WeaponModels = require(script.Parent.WeaponModels)
 local CameraRig = require(script.Parent.CameraRig)
-local HudView = require(script.Parent.HudView)
-local ScoreboardView = require(script.Parent.ScoreboardView)
-local SettingsView = require(script.Parent.SettingsView)
+local UIApp = require(script.Parent.UI.App)
 local AimView = require(script.Parent.AimView)
 
 local player = Players.LocalPlayer
+-- One bootstrap owns input, remotes and the UI. Never layer a second HUD.
+if player:WaitForChild("PlayerGui"):FindFirstChild("RoBattlesUI") then return end
 local remotes = ReplicatedStorage:WaitForChild("RoBattles"):WaitForChild("Remotes")
 local function now() return workspace:GetServerTimeNow() end
 
 local settings = KeybindSettings.new()
 local input = InputState.new(settings.binds)
 local rig = CameraRig.new(input)
-local hud = HudView.new()
+local app = UIApp.new(settings, function(binds) input:setBinds(binds) end)
+local hud = app.hud
 local effects = EffectPlayer.new(function() return workspace:GetServerTimeNow() end)
-local board = ScoreboardView.new()
+local board = app.board
 local aimView = AimView.new() -- SLINGSHOT RMB Aim Mode 궤적(표시 전용)
 local chargeStart -- 클라이언트가 충전 시작을 본 시각(표시용 추정. 실제 충전량은 서버가 정한다)
 local lastSnap, lastModel
@@ -44,11 +45,7 @@ local dashState -- SWORD Triple Slash/Lunge 서버 확정 전진: { start, dir, 
 local lastDashAccepted
 local myId = player.UserId
 
-local settingsView = SettingsView.new(settings, function(binds)
-	input:setBinds(binds)
-end, function(open)
-	input:setUiBlocking(open)
-end)
+local settingsView = app.settings
 
 local function character() return player.Character end
 local function hrp() local c = character() return c and c:FindFirstChild("HumanoidRootPart") end
@@ -82,7 +79,7 @@ local function send(cmd)
 	if cmd.localEffect == "CameraMode" then
 		rig:setMode(cmd.mode)
 	elseif cmd.localEffect == "Scoreboard" then
-		board:setVisible(cmd.visible)
+		board:setVisible(cmd.visible and not app:isBlocking())
 	elseif cmd.localEffect == "AimMode" then
 		aimView:setActive(cmd.active)
 	elseif cmd.remote == "Attack" or cmd.remote == "Skill" then
@@ -128,18 +125,40 @@ local function sendAll(cmds)
 	for _, c in cmds do send(c) end
 end
 
+-- UI integration seam only. No skill/cooldown/damage implementation lives here.
+-- Opening a menu / dying / results: release every held button (server rejects late Release safely) and stop sprint.
+app:setCallbacks({
+	select = function(id) remotes.SelectCharacter:FireServer({ characterId = id }) end,
+	blocking = function(open)
+		sendAll(input:releaseAll())
+		input:setUiBlocking(open)
+		if open then
+			aimView:setActive(false)
+			if input.running then
+				input.running = false
+				remotes.SetRun:FireServer({ enabled = false })
+			end
+		end
+	end,
+})
+script.Destroying:Connect(function() app:destroy(); effects:destroy() end)
+
 local function nameOf(inputObj)
 	if inputObj.KeyCode ~= Enum.KeyCode.Unknown then return inputObj.KeyCode.Name end
 	return inputObj.UserInputType.Name
 end
 
 UserInputService.InputBegan:Connect(function(obj, processed)
+	if obj.KeyCode == Enum.KeyCode.F9 then
+		app:toggleMenu()
+		return
+	end
 	if obj.KeyCode == Enum.KeyCode.F10 then
 		settingsView:setOpen(not settingsView:isOpen())
 		return
 	end
 	if settingsView:handleInput(obj) then return end
-	if processed and obj.UserInputType == Enum.UserInputType.Keyboard then return end
+	if (processed and obj.UserInputType == Enum.UserInputType.Keyboard) or app:isBlocking() then return end
 	sendAll(input:press(nameOf(obj), now()))
 end)
 UserInputService.InputEnded:Connect(function(obj)
@@ -149,13 +168,14 @@ UserInputService.WindowFocusReleased:Connect(function()
 	sendAll(input:releaseAll())
 end)
 UserInputService.InputChanged:Connect(function(obj)
-	if obj.UserInputType == Enum.UserInputType.MouseMovement then
-		rig:onMouseDelta(obj.Delta)
+	if obj.UserInputType == Enum.UserInputType.MouseMovement and not app:isBlocking() then
+		rig:onMouseDelta(obj.Delta * app.state.preferences.sensitivity)
 	end
 end)
 
 -- 서버 → 클라이언트
 remotes:WaitForChild("State").OnClientEvent:Connect(function(snap)
+	if not app:setSnapshot(snap, now()) then return end -- stale / malformed snapshots never reach input or HUD
 	if EffectsModel.reloadStarted(lastSnap, snap, now()) then
 		effects:play({ cue = "reload.start", playerId = myId, mine = true })
 	end
@@ -169,10 +189,14 @@ remotes:WaitForChild("State").OnClientEvent:Connect(function(snap)
 	hud:setCrosshair(snap.characterId, snap.alive)
 end)
 remotes:WaitForChild("Scoreboard").OnClientEvent:Connect(function(rows)
-	board:setRows(rows)
+	app:setRows(rows)
 end)
 local lastCorrection
 remotes:WaitForChild("Feedback").OnClientEvent:Connect(function(event)
+	app:onFeedback(event, now())
+	if event.type == "KillConfirmed" and event.attackerId == myId then
+		hud:showToast("KO!", now(), 1)
+	end
 	-- 서버 위치 보정(A41): 서버가 되돌린 위치로 즉시 이동하고 진행 중이던 회피는 취소한다.
 	if MovementModel.acceptCorrection(event, now(), lastCorrection, 1) == "snap" then
 		lastCorrection = event.time
@@ -206,7 +230,7 @@ remotes:WaitForChild("Feedback").OnClientEvent:Connect(function(event)
 		elseif fx.kind == "WasParried" then
 			hud:showToast("패링당함!", now(), 1)
 		elseif fx.kind == "DamageTaken" then
-			hud:showToast(string.format("-%d", fx.amount or 0), now(), 0.5)
+			if app.state.preferences.damageNumbers then hud:showToast(string.format("-%d", fx.amount or 0), now(), 0.5) end
 		elseif fx.kind == "HitMarker" then
 			hud:showHitMarker(now())
 		end
@@ -265,7 +289,14 @@ Players.PlayerAdded:Connect(watchProtection)
 for _, pl in Players:GetPlayers() do watchWeapon(pl) end
 Players.PlayerAdded:Connect(watchWeapon)
 
+player.CharacterRemoving:Connect(function()
+	lastSnap, lastModel = nil, nil
+	app:awaitSnapshot()
+end)
+
 player.CharacterAdded:Connect(function(model)
+	lastSnap, lastModel = nil, nil
+	app:awaitSnapshot()
 	rig:setCharacter(model)
 	input.running = false
 	dodgeState = nil
@@ -274,8 +305,15 @@ end)
 if player.Character then rig:setCharacter(player.Character) end
 
 -- 매 프레임: 카메라, 회피 이동(서버 확인 후), 달리기 속도 표시, HUD
-RunService.RenderStepped:Connect(function()
-	rig:update()
+local uiElapsed = 0
+RunService.RenderStepped:Connect(function(dt)
+	local blocking = app:isBlocking()
+	if not blocking then
+		rig:update()
+	else
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+		UserInputService.MouseIconEnabled = true
+	end
 	local h = hrp()
 	-- SLINGSHOT Aim Mode 궤적: 충전 표시용 추정값(누른 시간 / chargeSeconds). 서버 판정과 무관.
 	if input.primaryHeld then
@@ -313,7 +351,7 @@ RunService.RenderStepped:Connect(function()
 	local c = character()
 	local hum = c and c:FindFirstChildOfClass("Humanoid")
 	if hum then
-		local mv = input:moveVector()
+		local mv = blocking and { x = 0, z = 0 } or input:moveVector()
 		local look, right = rig.model:lookDirection(), rig.model:rightVector()
 		local fx, fz = look.X, look.Z
 		local fl = math.sqrt(fx * fx + fz * fz)
@@ -326,7 +364,7 @@ RunService.RenderStepped:Connect(function()
 			hum.AutoRotate = input.mode == "Free"
 		end
 	end
-	if lastSnap and lastSnap.alive then
+	if lastSnap and lastSnap.alive and not blocking then
 		-- 자동 연사: LMB 를 누르고 있는 동안 서버에 반복 발사 의사를 보낸다(간격·탄약은 서버가 판정)
 		local def = Characters[lastSnap.characterId]
 		if def and def.primary.fireInterval then
@@ -339,9 +377,11 @@ RunService.RenderStepped:Connect(function()
 			send({ remote = "Aim" })
 		end
 	end
-	if lastSnap then
-		lastModel = HudModel.build(lastSnap, now())
-		hud:render(lastModel, now())
+	uiElapsed += dt
+	if uiElapsed >= 0.05 then
+		uiElapsed = 0
+		lastModel = lastSnap and HudModel.build(lastSnap, now()) or nil
+		app:render(lastModel, now())
 	end
 end)
 

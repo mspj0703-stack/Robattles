@@ -1,0 +1,62 @@
+local Mock=require("./RobloxMock")
+local App=require("../client/UI/App")
+local KeybindSettings=require("../client/Logic/KeybindSettings")
+local HudModel=require("../client/Logic/HudModel")
+local passed=0
+local function test(name,fn) fn();passed+=1;print("PASS GUI mock "..name) end
+local app
+local settings=KeybindSettings.new()
+local function snapshot(t,alive,id)
+	return {t=t,alive=alive,characterId=id or "SWORD",canAct=true,health={cur=80,max=100},cooldowns={primary={readyAt=99},secondary={readyAt=105,total=10}},
+		dodge={charges=2,max=2},skills={{implemented=false},{implemented=false},{implemented=false}},ultimate={gauge=100,max=100,implemented=true,active=false},hasSecondary=true}
+end
+local function render(snap) app:setSnapshot(snap,Mock.time);app:render(HudModel.build(snap,Mock.time),Mock.time) end
+test("construct one shared ScreenGui and all pages",function() app=App.new(settings,function() end);assert(app.menu.Visible);assert(app:isBlocking());assert(Mock.playerGui:FindFirstChild("RoBattlesUI"));assert(#app.board.cells==12) end)
+local selected
+app:setCallbacks({select=function(id) selected=id end,blocking=function(v) end})
+test("play exits menu on real state",function() render(snapshot(100,true));app:open("Battle");assert(not app:isBlocking());assert(app.hud.root.Visible);assert(not app.menu.Visible) end)
+test("all five characters are selectable and show real HP",function() app:open("Characters");for _,id in {"SWORD","PAINTBALL","SUPERBALL","TIMEBOMB","SLINGSHOT"} do app:selectPreview(id);assert(app.selectable,id);assert(not app.characterInfo.Text:find("미정"),id);assert(not app.passiveInfo.Text:find("대기"),id) end;app:selectPreview("SLINGSHOT");assert(app.characterInfo.Text:find("HP 100"));app:selectPreview("SWORD");assert(app.characterInfo.Text:find("HP 110")) end)
+test("full match disables selection",function() local s=snapshot(100.05,true);s.match={phase="ACTIVE",player={state="Menu",selected=false,characterSelectionAllowed=false}};Mock.time=100.05;render(s);app:selectPreview("SLINGSHOT");app:requestSelection();assert(selected==nil);assert(not app.selectable);render(snapshot(100.06,true)) end)
+test("supported selection request and ack",function() app:selectPreview("PAINTBALL");app:requestSelection();assert(selected=="PAINTBALL");local s=snapshot(100.1,true);s.pendingCharacterId="PAINTBALL";Mock.time=100.1;render(s);assert(app.state.requested==nil) end)
+test("death panel countdown and unavailable skills",function() app:open("Battle");Mock.time=101;app:onFeedback({type="Died",playerId=7,time=101},101);render(snapshot(101,false));assert(app.death.Visible);assert(app:isBlocking());assert(app.hud.ultimate.Text:find("사용 불가"));assert(not app.hud.cross.Visible) end)
+test("menu navigation during death keeps correct return page",function() app.death:FindFirstChild("ChangeCharacter").Activated:Fire();assert(app.characterPage.Visible);app.characterPage:FindFirstChild("Back").Activated:Fire();assert(app.death.Visible) end)
+test("respawn and character change clear transient state",function() Mock.time=105;app:onFeedback({type="Respawned",playerId=7,time=105},105);render(snapshot(105.1,true,"PAINTBALL"));assert(not app.death.Visible);assert(not app:isBlocking());assert(app.hud.character.Text=="PAINTBALL") end)
+test("ammo reload and empty statuses",function() local s=snapshot(106,true,"PAINTBALL");s.ammo={cur=0,mag=30,reloadingUntil=109,reloadSeconds=3};Mock.time=106;render(s);assert(app.hud.slots[1].status.Text=="장전 중");Mock.time=110;s.t=110;render(s);assert(app.hud.slots[1].status.Text=="탄약 없음") end)
+test("settings block input and restore battle",function() app.settings:setOpen(true);assert(app.state.page=="Settings" and app:isBlocking());app.settings:setOpen(false);assert(app.state.page=="Battle") end)
+test("settings callback updates sound group",function() local opts=app.settings.root:FindFirstChild("Options");opts:FindFirstChild("sfxMinus").Activated:Fire();assert(Mock.services.SoundService:FindFirstChild("RoBattlesSFX").Volume==0.9) end)
+test("settings damage numbers and shake toggle",function() app.state.preferences.damageNumbers=false;app.state.preferences.shake=false;app.hud:clearTransient();app:onFeedback({type="Damaged",attackerId=7,targetId=7,amount=12},110);assert(app.hud.damageUntil==nil and app.hud.shakeUntil==nil) end)
+test("scoreboard is 12 pooled rows in server order",function() local rows={};for i=1,12 do table.insert(rows,{id=i,name="Player"..i,kills=13-i,deaths=i}) end;app:setRows(rows);assert(app.board.cells[7].name.Text=="YOU · Player7");assert(app.board.cells[1].kills.Text=="12") end)
+test("optional server results and next round",function() Mock.time=111;local s=snapshot(111,true);s.ui={version=1,match={phase="Results",results=app.state.rows,nextStartsAt=115}};render(s);assert(app.results.Visible and app:isBlocking());Mock.time=115;render(snapshot(115,true));assert(not app.results.Visible and not app:isBlocking()) end)
+test("stale connection blocks and recovers",function() Mock.time=120;app:render(HudModel.build(app.state.snap,120),120);assert(app.connection.Visible and app:isBlocking());render(snapshot(120,true));assert(not app.connection.Visible and not app:isBlocking()) end)
+test("repeated updates allocate no GUI objects",function() local before=Mock.created;for i=1,100 do app:render(HudModel.build(app.state.snap,120),120) end;assert(before==Mock.created) end)
+test("character removal clears HUD until new state",function() app:awaitSnapshot();app:render(nil,Mock.time);assert(app:isBlocking() and app.connection.Visible);render(snapshot(121,true,"PAINTBALL"));assert(app.state.snap.characterId=="PAINTBALL") end)
+local function msnap(t,alive,phase,pstate,extra)
+	local x=snapshot(t,alive)
+	x.match={phase=phase,matchId=1,endsAt=t+60,countdownEndsAt=t+3,resultsEndsAt=t+10,participantCount=3,maxPlayers=12,
+		player={state=pstate,selected=pstate~="Menu",characterSelectionAllowed=true,rank=2,kills=4}}
+	for k,v in extra or {} do x.match[k]=v end
+	return x
+end
+test("menu state is not the knocked-out panel",function() Mock.time=130;app:open("Battle");render(msnap(130,false,"WAITING","Menu"));assert(app.state:status(130)=="Menu");assert(not app.death.Visible);assert(app.connection.Visible);assert(app.connectionText.Text:find("캐릭터를 선택"));assert(app:isBlocking()) end)
+test("PLAY without a server selection opens the character page",function() app:open("Menu");app.menu:FindFirstChild("PLAY").Activated:Fire();assert(app.characterPage.Visible);assert(not app.menu.Visible) end)
+test("selected but unspawned shows loading, not death",function() Mock.time=131;app:open("Battle");render(msnap(131,false,"WAITING","Selected"));assert(not app.death.Visible);assert(app.connection.Visible);assert(app.connectionText.Text:find("불러오는")) end)
+test("spawn failure is surfaced",function() Mock.time=132;local x=msnap(132,false,"WAITING","Selected");x.match.player.spawnStatus="Failed";render(x);assert(app.connectionText.Text:find("스폰 실패")) end)
+test("waiting countdown and active top bar come from the server phase",function()
+	Mock.time=133;render(msnap(133,true,"WAITING","Participating"));assert(app.hud.top.Text:find("대기 중"));assert(app.hud.top.Text:find("최소 2"))
+	Mock.time=134;render(msnap(134,true,"COUNTDOWN","Participating"));assert(app.hud.top.Text:find("경기 시작 3"))
+	app:setRows({});	Mock.time=135;render(msnap(135,true,"ACTIVE","Participating"));assert(app.hud.top.Text:find("TIME 01:00"));assert(app.hud.top.Text:find("RANK 2"));assert(app.hud.top.Text:find("KO 4"))
+	local x=msnap(136,true,"ACTIVE","Participating",{lowPopulationEndsAt=146});Mock.time=136;render(x);assert(app.hud.top.Text:find("인원 부족 10s")) end)
+test("server Dead state shows death panel with server respawn time",function() Mock.time=140;local x=msnap(140,false,"ACTIVE","Dead");x.match.player.respawnAt=144;render(x);assert(app.death.Visible);assert(app.countdown.Text:find("4초 후 부활")) end)
+test("KillConfirmed names the killer on the panel and in the feed",function() Mock.time=141;app:onFeedback({type="KillConfirmed",attackerId=99,targetId=7,time=141},141);app:onFeedback({type="Died",playerId=7,time=141},141);local x=msnap(141,false,"ACTIVE","Dead");x.match.player.respawnAt=145;render(x);assert(app.deathInfo.Text:find("처치자: Player 99"));assert(app.hud.feed.Text:find("▶")) end)
+test("respawn returns to alive HUD",function() Mock.time=146;app:onFeedback({type="Respawned",playerId=7,time=146},146);render(msnap(146.1,true,"ACTIVE","Participating"));assert(not app.death.Visible);assert(not app:isBlocking()) end)
+test("scoreboard shows server ranks with ties and grows past 12 rows",function()
+	local rows={};for i=1,15 do table.insert(rows,{id=i,name="P"..i,kills=15-i,deaths=i,rank=i<=2 and 1 or i,connected=i~=5}) end
+	app:setRows(rows);assert(#app.board.cells==15);assert(app.board.cells[2].rank.Text=="1");assert(app.board.cells[1].rank.Text=="1");assert(app.board.cells[3].rank.Text=="3");assert(app.board.cells[5].name.Text:find("퇴장"))
+	app:setRows({rows[1]});assert(not app.board.cells[2].root.Visible);assert(#app.board.cells==15) end)
+test("canonical RESULTS phase shows results with more than 12 rows and server countdown",function()
+	local rows={};for i=1,14 do table.insert(rows,{id=i,name="R"..i,kills=20-i,deaths=1,rank=i}) end
+	Mock.time=150;render(msnap(150,true,"RESULTS","Selected",{results=rows,resultsEndsAt=158}));assert(app.results.Visible);assert(app:isBlocking());assert(#app.resultBoard.cells==14);assert(app.resultNext.Text:find("8초"))
+	Mock.time=159;render(msnap(159,true,"ACTIVE","Participating"));assert(not app.results.Visible) end)
+test("cancelled round is announced",function() Mock.time=160;render(msnap(160,true,"RESULTS","Selected",{results={},resultsEndsAt=170,cancelled=true}));assert(app.resultNext.Text:find("인원 부족")) ;Mock.time=171;render(msnap(171,true,"ACTIVE","Participating")) end)
+test("destroy restores core list and disconnects owned events",function() app:destroy();assert(app.gui.Destroyed);assert(Mock.services.StarterGui.enabled);assert(Mock.services.ContextActionService.bound.RoBattlesUIModal==nil) end)
+print("GUI mock: "..passed.." passed / 0 failed (NOT Studio)")
