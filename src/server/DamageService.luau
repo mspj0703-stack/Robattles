@@ -33,6 +33,26 @@ function DamageService:register(id, maxHealth)
 	self._ent[id] = { health = m, maxHealth = m, alive = true }
 end
 
+-- 캐릭터별 최대 체력(Phase 2). 살아 있으면 체력을 새 최대치로 채운다(부활 직후 캐릭터 변경 적용용).
+function DamageService:setMaxHealth(id, maxHealth, refill)
+	local e = self._ent[id]
+	if not e or type(maxHealth) ~= "number" or maxHealth ~= maxHealth or maxHealth <= 0 then
+		return false
+	end
+	e.maxHealth = maxHealth
+	if refill and e.alive then
+		e.health = maxHealth
+	else
+		e.health = math.min(e.health, maxHealth)
+	end
+	return true
+end
+
+function DamageService:getMaxHealth(id)
+	local e = self._ent[id]
+	return e and e.maxHealth or self._cfg.Combat.MaxHealth
+end
+
 function DamageService:remove(id)
 	self._ent[id] = nil
 	self._protect[id] = nil

@@ -41,7 +41,7 @@ local function setup(ids, opts)
 	if opts.movement then
 		movement = Movement.new({ world = H.fakeWorld({ { point = v(0, 0, 0), normal = v(0, 1, 0) } }) })
 	end
-	local c = Controller.new({
+	local c = Controller.new({ characters = H.legacyChars(Env.shared("Data/Characters")),
 		core = core, projectiles = ps, targets = targets, world = world, movement = movement,
 		getPose = function(id) return { pos = pos[id], forward = face[id], airborne = false } end,
 	})
@@ -58,7 +58,7 @@ end
 
 local function skill(slot, phase) return { slot = slot, aimDirection = fwd, phase = phase } end
 local function prim() return { action = "Primary", aimDirection = fwd } end
-local function hp(core, id) return core.damage:getHealth(id) end
+local function hp(core, id) return H.hp(core, id) end
 -- Duelist 보너스를 배제하고 순수 단계 피해를 측정할 때 사용(테스트 전용)
 local function noDuelist(c) c._sword:duelist():clearAttacker("a") end
 local function count(events, ty, f)
@@ -692,8 +692,8 @@ T.describe("SWORD 클라이언트 순수 로직 (입력·이동·연출·HUD) �
 		local m3 = HudModel.build(c2:getHudSnapshot("a", t), t)
 		T.expect(m3.passive.lockRemaining > 0 and not m3.passive.ready)
 	end)
-	T.it("PAINTBALL 은 여전히 스킬/궁극기 미구현 표시(별도 Step)", function()
-		local c = setup({ p = "PAINTBALL" })
+	T.it("구현 모듈이 없는 캐릭터(GUNNER)는 스킬/궁극기 미구현 표시", function()
+		local c = setup({ p = "GUNNER" })
 		local m = HudModel.build(c:getHudSnapshot("p", 0), 0)
 		for i = 1, 3 do T.expect(not m.skills[i].implemented and m.skills[i].label == "미구현") end
 		T.expect(m.ultimate.implemented == false)

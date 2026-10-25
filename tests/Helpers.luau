@@ -10,6 +10,40 @@ function Helpers.clone(t)
 	return c
 end
 
+-- 체력 비교용(Phase 2): 캐릭터별 최대 체력이 달라져도 기존 "100 HP 기준 받은 피해" 단언을 유지하도록 100 기준으로 환산한 체력.
+-- 사망(0)은 0 그대로. 캐릭터별 최대 체력 자체는 Hp.spec 이 따로 검증한다.
+function Helpers.hp(core, id)
+	local h = core.damage:getHealth(id)
+	if h <= 0 then
+		return 0
+	end
+	return h - (core.damage:getMaxHealth(id) - 100)
+end
+
+-- 공통 경로(구현 모듈이 없는 캐릭터) 회귀용 테스트 전용 캐릭터 GUNNER = Phase 1 의 옛 PAINTBALL 데이터(자동 연사 30발·재장전 1.8초·자리표시자 궁극기·스킬 없음).
+-- PAINTBALL 이 Phase 2 에서 전용 모듈로 구현되면서, "스킬/궁극기 미구현 거부", 공통 사격/탄약/재장전 경로 같은 보안·회귀 검사를
+-- 삭제하지 않고 이 캐릭터로 계속 검증한다. 실제 게임 데이터(Characters)에는 포함되지 않는다.
+function Helpers.legacyChars(Characters)
+	local c = {}
+	for k, val in Characters do
+		c[k] = val
+	end
+	c.GUNNER = {
+		id = "GUNNER",
+		displayName = "Gunner",
+		primary = {
+			kind = "Projectile", automatic = true, fireInterval = 0.12, damage = 4, moveSpeedMult = 0.9, stagger = false,
+			projectile = {
+				id = "gunner_pellet", type = "Linear", collision = { mode = "Spherecast", radius = 0.3 },
+				speed = 220, gravity = 0, lifetime = 2, maxRange = 300, damage = 4, rehitInterval = 0,
+			},
+		},
+		ammo = { magazine = 30, reloadSeconds = 1.8 },
+		ultimate = { duration = 3, placeholder = true },
+	}
+	return c
+end
+
 function Helpers.v(x, y, z)
 	return { X = x, Y = y or 0, Z = z or 0 }
 end

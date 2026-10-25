@@ -49,7 +49,7 @@ end
 
 -- SWORD 돌진/전진(Triple Slash, Lunge): 서버가 SwordSkill 이벤트로 확정한 속도·시간만 따른다(서버 이동 허가와 같은 값).
 -- 반환: 수평 속도 벡터 또는 nil(시간이 끝났거나 값이 비정상). 상한은 허가 상한(Config.MoveCheck.Permits)으로 제한한다.
-function MovementModel.dashVelocity(startTime, direction, speed, duration, now, config)
+function MovementModel.dashVelocity(startTime, direction, speed, duration, now, config, permitKind)
 	local cfg = config or Config
 	if type(startTime) ~= "number" or type(speed) ~= "number" or type(duration) ~= "number" or type(direction) ~= "table" then
 		return nil
@@ -65,18 +65,23 @@ function MovementModel.dashVelocity(startTime, direction, speed, duration, now, 
 		return nil
 	end
 	local cap = 0
-	for _, kind in { "Lunge", "TripleSlash" } do -- SWORD 전진/돌진 허가 상한만 기준(넉백 등 다른 허가는 제외)
-		local p = cfg.MoveCheck.Permits[kind]
-		if p then
-			cap = math.max(cap, p.maxSpeed)
+	local exact = type(permitKind) == "string" and cfg.MoveCheck.Permits[permitKind] or nil
+	if exact then
+		cap = exact.maxSpeed -- 서버가 알려 준 허가 종류가 있으면 그 종류의 상한만 적용
+	else
+		for _, kind in { "Lunge", "TripleSlash", "PaintSlide" } do -- 종류를 모르면 스킬 전진/돌진 허가 상한만 기준(넉백 등 다른 허가는 제외)
+			local p = cfg.MoveCheck.Permits[kind]
+			if p then
+				cap = math.max(cap, p.maxSpeed)
+			end
 		end
 	end
 	return Vec.scale(dir, math.min(speed, cap))
 end
 
--- 내 SwordSkill 이벤트 중 이동을 동반한 것만 수용(최근·중복 아님)
+-- 내 SwordSkill / CharSkill(캐릭터 모듈) 이벤트 중 이동을 동반한 것만 수용(최근·중복 아님)
 function MovementModel.acceptDashEvent(event, myId, now, lastAcceptedTime, maxAge)
-	if type(event) ~= "table" or event.type ~= "SwordSkill" or event.playerId ~= myId or type(event.dash) ~= "table" then
+	if type(event) ~= "table" or (event.type ~= "SwordSkill" and event.type ~= "CharSkill") or event.playerId ~= myId or type(event.dash) ~= "table" then
 		return false
 	end
 	if type(event.time) ~= "number" or now - event.time > (maxAge or 1) then

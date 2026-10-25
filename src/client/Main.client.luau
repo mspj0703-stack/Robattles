@@ -94,6 +94,11 @@ local function send(cmd)
 			end
 			remotes[cmd.remote]:FireServer(payload)
 		end
+	elseif cmd.remote == "Aim" then
+		local origin, dir = rig:aim(300)
+		if origin then
+			remotes.Aim:FireServer({ aimOrigin = origin, aimDirection = dir, clientTime = now() })
+		end
 	elseif cmd.remote == "Dodge" then
 		local c = workspace.CurrentCamera
 		local h = hrp()
@@ -149,7 +154,8 @@ remotes:WaitForChild("State").OnClientEvent:Connect(function(snap)
 		effects:play({ cue = "reload.start", playerId = myId, mine = true })
 	end
 	lastSnap = snap
-	input:setCharacter(snap.characterId, snap.ammo ~= nil)
+	local charDef = Characters[snap.characterId]
+	input:setCharacter(snap.characterId, snap.ammo ~= nil, charDef ~= nil and charDef.primary.automatic == true)
 	input:reconcileRun(snap.running, now())
 	hud:setCrosshair(snap.characterId, snap.alive)
 end)
@@ -173,9 +179,9 @@ remotes:WaitForChild("Feedback").OnClientEvent:Connect(function(event)
 	-- SWORD 스킬 전진/돌진: 서버가 이동 허가를 발급한 뒤 보낸 이벤트만 따른다.
 	if MovementModel.acceptDashEvent(event, myId, now(), lastDashAccepted, 1) then
 		lastDashAccepted = event.time
-		dashState = { start = now(), dir = event.direction, speed = event.dash.speed, duration = event.dash.duration }
+		dashState = { start = now(), dir = event.direction, speed = event.dash.speed, duration = event.dash.duration, permit = event.dash.permit }
 		dodgeState = nil
-	elseif event.type == "SwordSkill" and event.playerId == myId and event.phase == "Cancel" then
+	elseif (event.type == "SwordSkill" or event.type == "CharSkill") and event.playerId == myId and event.phase == "Cancel" then
 		dashState = nil
 	end
 	if MovementModel.acceptDodgeEvent(event, myId, now(), lastDodgeAccepted, 1) then
@@ -272,7 +278,7 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 	if h and dashState then
-		local v = MovementModel.dashVelocity(dashState.start, dashState.dir, dashState.speed, dashState.duration, now())
+		local v = MovementModel.dashVelocity(dashState.start, dashState.dir, dashState.speed, dashState.duration, now(), nil, dashState.permit)
 		if v then
 			h.AssemblyLinearVelocity = Vector3.new(v.X, h.AssemblyLinearVelocity.Y, v.Z)
 		else
@@ -294,6 +300,19 @@ RunService.RenderStepped:Connect(function()
 			h.CFrame = CFrame.lookAt(h.Position, h.Position + Vector3.new(fx, 0, fz))
 		else
 			hum.AutoRotate = input.mode == "Free"
+		end
+	end
+	if lastSnap and lastSnap.alive then
+		-- 자동 연사: LMB 를 누르고 있는 동안 서버에 반복 발사 의사를 보낸다(간격·탄약은 서버가 판정)
+		local def = Characters[lastSnap.characterId]
+		if def and def.primary.fireInterval then
+			local cmd = input:autoFire(now(), def.primary.fireInterval)
+			if cmd then send(cmd) end
+		end
+		-- 빔 시전 중 조준 갱신(PAINTBALL Color Break): 시전 중에만 일정 주기로 전송
+		local ult = lastSnap.ultimate
+		if input:aimDue(now(), ult ~= nil and ult.active == true and lastSnap.characterId == "PAINTBALL", 1 / Config.Hud.AimSyncHz) then
+			send({ remote = "Aim" })
 		end
 	end
 	if lastSnap then

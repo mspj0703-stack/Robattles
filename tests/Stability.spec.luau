@@ -28,7 +28,7 @@ local function setup(chars, opts)
 		return list
 	end
 	local ps = ProjectileService.new({ damage = core.damage, targets = targets, world = world })
-	local c = Controller.new({
+	local c = Controller.new({ characters = H.legacyChars(Env.shared("Data/Characters")),
 		core = core, projectiles = ps, targets = targets, world = world, allowMockUltimate = opts and opts.mockUltimate or false,
 		getPose = function(id) return { pos = pos[id], forward = fwd, airborne = false } end,
 	})
@@ -94,7 +94,7 @@ T.describe("보호 경계: 서버 보호 종료 후 정상 피해 / 보호 중 �
 		T.expect(not r1.applied and r1.reason == "spawn_protected")
 		local r2 = core.damage:applyDamage(hitReq("p1", "p2", 2), 12.0)
 		T.expect(r2.applied)
-		T.expectEqual(core.damage:getHealth("p2"), 90)
+		T.expectEqual(H.hp(core, "p2"), 90)
 	end)
 	T.it("보호는 2초에서 연장되지 않는다: 만료 이벤트 이후 update 를 반복해도, 외부 스폰 설정과 무관하게 피해 적용", function()
 		local c, core = setup({ p1 = "SWORD", p2 = "SWORD" })
@@ -199,7 +199,7 @@ T.describe("공통 공격 시작 처리 (approveAction)", function()
 		T.expect(c:isProtected("p1", 0.5))
 	end)
 	T.it("탄약 부족·재장전 중 거부는 보호를 해제하지 않는다", function()
-		local c = setup({ p1 = "PAINTBALL" })
+		local c = setup({ p1 = "GUNNER" })
 		c:respawn("p1", 0)
 		c._p["p1"].ammo = 0
 		local ok, why = c:handleAttack("p1", { action = "Primary", aimDirection = fwd }, 0.5)
@@ -210,7 +210,7 @@ T.describe("공통 공격 시작 처리 (approveAction)", function()
 		T.expect(c:isProtected("p1", 0.7))
 	end)
 	T.it("RMB 패링은 유지 / (PAINTBALL) 스킬 1·2·3 거부(미구현)·궁극기 거부는 유지", function()
-		local c = setup({ p1 = "SWORD", p2 = "PAINTBALL" })
+		local c = setup({ p1 = "SWORD", p2 = "GUNNER" })
 		c:respawn("p1", 0)
 		c:respawn("p2", 0)
 		T.expect((c:handleAttack("p1", { action = "Secondary", aimDirection = fwd }, 0.2)))

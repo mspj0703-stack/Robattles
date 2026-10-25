@@ -26,6 +26,12 @@ RemoteSpec.Remotes = {
 		aimDirection = unitDir,
 		clientTime = Schema.number({ min = 0 }),
 	}),
+	-- 시전 중 조준 갱신(PAINTBALL Color Break 빔 등). 서버가 해당 캐릭터의 지속 시전 중일 때만 사용하고 그 외에는 무시한다.
+	Aim = Schema.object({
+		aimOrigin = Schema.vector3(),
+		aimDirection = unitDir,
+		clientTime = Schema.number({ min = 0 }),
+	}),
 	Reload = Schema.object({}),
 	Dodge = Schema.object({
 		direction = unitDir,
@@ -36,7 +42,7 @@ RemoteSpec.Remotes = {
 	}),
 	-- 캐릭터 선택: 다음 리스폰부터 적용(확정 규칙). 현재는 Phase 1 테스트 캐릭터만 허용.
 	SelectCharacter = Schema.object({
-		characterId = Schema.oneOf({ "SWORD", "PAINTBALL" }),
+		characterId = Schema.oneOf({ "SWORD", "PAINTBALL" }), -- 구현 단계마다 추가(SUPERBALL·TIMEBOMB·SLINGSHOT)
 	}),
 	SetRun = Schema.object({
 		enabled = Schema.boolean(),

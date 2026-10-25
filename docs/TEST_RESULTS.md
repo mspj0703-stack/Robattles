@@ -1,6 +1,6 @@
 # 자동 테스트 결과 (Luau CLI, 순수 로직)
 
-실행 시각: 2026-10-25 11:34
+실행 시각: 2026-10-25 14:33
 종료 코드: 0
 
 ```
@@ -203,14 +203,14 @@ PASS  패링 확정 사양: 전방 180° / 0.4초 / 반격 18 / 쿨타임 10초 
 PASS  패링 확정 사양: 전방 180° / 0.4초 / 반격 18 / 쿨타임 10초 > 차단된 공격의 상태이상(넉백 등)은 적용되지 않음
 PASS  패링 확정 사양: 전방 180° / 0.4초 / 반격 18 / 쿨타임 10초 > 패링 방향·성공은 서버 자세로 판정: 클라이언트가 보낸 조준 방향은 영향 없음
 PASS  궁극기 자리표시자: 실플레이에서는 게이지 소모 금지 > 개발용 모의 허용 설정은 기본 false
-PASS  궁극기 자리표시자: 실플레이에서는 게이지 소모 금지 > 미구현 궁극기는 F를 눌러도 거부되고 게이지가 유지됨
+PASS  궁극기 자리표시자: 실플레이에서는 게이지 소모 금지 > 미구현 궁극기(PAINTBALL)는 F를 눌러도 거부되고 게이지가 유지됨
 PASS  궁극기 자리표시자: 실플레이에서는 게이지 소모 금지 > PAINTBALL도 동일
-PASS  궁극기 자리표시자: 실플레이에서는 게이지 소모 금지 > 테스트 전용 모의 실행 옵션을 켠 경우에만 실행·소모
-PASS  궁극기 자리표시자: 실플레이에서는 게이지 소모 금지 > HUD 스냅샷이 미구현 상태를 알려줌, 게이지 충전은 그대로 동작
+PASS  궁극기 자리표시자: 실플레이에서는 게이지 소모 금지 > 테스트 전용 모의 실행 옵션을 켠 경우에만 실행·소모(미구현 PAINTBALL)
+PASS  궁극기 자리표시자: 실플레이에서는 게이지 소모 금지 > HUD 스냅샷이 미구현 상태를 알려줌(PAINTBALL), SWORD 는 구현됨, 게이지 충전은 그대로 동작
 PASS  3단계 서버 지원: 달리기 해제·공중 공격·스킬 미구현·스냅샷 > 공격 시 달리기 해제 (근접·원거리·패링)
 PASS  3단계 서버 지원: 달리기 해제·공중 공격·스킬 미구현·스냅샷 > 실패한 공격(쿨타임)은 달리기를 해제하지 않음
 PASS  3단계 서버 지원: 달리기 해제·공중 공격·스킬 미구현·스냅샷 > 공중에서도 공격 가능 (공중 공격 허용)
-PASS  3단계 서버 지원: 달리기 해제·공중 공격·스킬 미구현·스냅샷 > 숫자 스킬은 미구현으로 거부되며 쿨타임·상태를 소모하지 않음
+PASS  3단계 서버 지원: 달리기 해제·공중 공격·스킬 미구현·스냅샷 > 미구현 캐릭터(PAINTBALL)의 숫자 스킬은 거부되며 쿨타임·상태를 소모하지 않음
 PASS  3단계 서버 지원: 달리기 해제·공중 공격·스킬 미구현·스냅샷 > HUD 스냅샷: SWORD는 탄약 없음, PAINTBALL은 탄약·쿨타임·회피 정보
 PASS  ScoreboardService > 킬/데스 집계와 정렬(킬↓, 데스↑, 이름)
 PASS  ScoreboardService > 환경 사망·자살은 킬이 오르지 않고 데스만 증가
@@ -258,9 +258,9 @@ PASS  회피: 방향·서버 확인 후 이동·공중 회피·충전 > 클라�
 PASS  비정상 클라이언트 입력 > 알 수 없는 Attack action·Skill 슬롯·음수 시간·추가 필드·잘못된 타입 모두 거부
 PASS  비정상 클라이언트 입력 > 연타 입력은 서버 쿨타임이 판정하며 클라이언트 명령 수는 제한 없이 생성되어도 안전
 PASS  HUD 모델과 궁극기 미구현 표시 > SWORD: 탄약 없음, 보조 공격 쿨타임 표시
-PASS  HUD 모델과 궁극기 미구현 표시 > PAINTBALL: 탄약·재장전 진행, 보조 공격 없음
-PASS  HUD 모델과 궁극기 미구현 표시 > 궁극기 미구현이면 게이지가 가득이어도 ready=false이고 미구현 문구 표시
-PASS  HUD 모델과 궁극기 미구현 표시 > 숫자 스킬 3칸은 모두 미구현 표시
+PASS  HUD 모델과 궁극기 미구현 표시 > GUNNER(구현 모듈 없는 공통 경로): 탄약·재장전 진행, 보조 공격 없음
+PASS  HUD 모델과 궁극기 미구현 표시 > 궁극기 미구현(GUNNER)이면 게이지가 가득이어도 ready=false이고 미구현 문구 표시
+PASS  HUD 모델과 궁극기 미구현 표시 > 숫자 스킬 3칸은 미구현 캐릭터(GUNNER)에서 모두 미구현 표시
 PASS  HUD 모델과 궁극기 미구현 표시 > 회피 충전 표시 및 비정상 스냅샷은 nil
 PASS  HUD 모델과 궁극기 미구현 표시 > 패링 활성 표시
 PASS  피드백 이벤트 번역 > 패링 성공: 내가 패링하면 ParrySuccess, 내가 막힌 공격자면 WasParried
@@ -374,15 +374,171 @@ PASS  공통 공격 시작 처리 (approveAction) > 피해가 적중하지 않�
 PASS  공통 공격 시작 처리 (approveAction) > 비공격 행동(패링 정의·순수 이동기)은 보호 유지
 PASS  공통 공격 시작 처리 (approveAction) > LMB 쿨타임으로 거부된 요청은 보호를 해제하지 않는다
 PASS  공통 공격 시작 처리 (approveAction) > 탄약 부족·재장전 중 거부는 보호를 해제하지 않는다
-PASS  공통 공격 시작 처리 (approveAction) > RMB 패링은 유지 / 스킬 1·2·3 거부(미구현)·궁극기 거부는 유지
+PASS  공통 공격 시작 처리 (approveAction) > RMB 패링은 유지 / (PAINTBALL) 스킬 1·2·3 거부(미구현)·궁극기 거부는 유지
 PASS  공통 공격 시작 처리 (approveAction) > 궁극기 승인 시 해제(모의 궁극기, 게이지 100)
 PASS  공통 공격 시작 처리 (approveAction) > 사망/미등록 플레이어의 승인 요청은 무시
 PASS  지연 공격(설치·원격 기폭) 보호 악용 방지 > 설치 승인은 공격 시작 → 보호 해제
 PASS  지연 공격(설치·원격 기폭) 보호 악용 방지 > 설치 후 사망·재부활(새 보호)한 상태에서 원격 기폭 명령을 내리면 그 시점에 보호가 해제된다
 PASS  지연 공격(설치·원격 기폭) 보호 악용 방지 > 타이머/조건으로 스스로 터지는 기존 설치물은 소유자 행동이 아니므로 승인 처리 없이 보호를 해제하지 않는다(문서화된 동작)
-PASS  캐릭터 로드: 타임아웃·중복·재시도 (RespawnScheduler) > 로드 호출 후 응답이 없으면 타임아웃 후 실패 처리되고 재시도 대기에 들어간다
-PASS  캐릭터 로드: 타임아웃·중복·재시도 (RespawnScheduler) > 타임아웃이 반복돼도 재시도 상한 후 포기(영구 반복 없음)
+PASS  캐릭터 로드: 타임아웃·중복·재시도 (RespawnScheduler) > 호출이 반환했는데 CharacterAdded 가 없으면 타임아웃 후 실패 처리, 재시도는 1초 뒤
+PASS  캐릭터 로드: 타임아웃·중복·재시도 (RespawnScheduler) > 반환 후 타임아웃이 반복돼도 재시도 상한 후 포기(영구 반복 없음)
 PASS  캐릭터 로드: 타임아웃·중복·재시도 (RespawnScheduler) > 성공 응답(onSpawned) 후 늦게 도착한 타임아웃 검사는 영향 없음
+PASS  로드 경쟁 상태: 시도 ID · 겹침 금지 · 오래된 완료 무시 > 호출이 반환하지 않으면 타임아웃이 지나도 새 로드를 시작하지 않는다(타임아웃 플래그 초기화는 수정이 아님)
+PASS  로드 경쟁 상태: 시도 ID · 겹침 금지 · 오래된 완료 무시 > 오래 걸린 호출이 늦게 반환: 같은 시도면 반영, 반환 전에는 재호출 없음
+PASS  로드 경쟁 상태: 시도 ID · 겹침 금지 · 오래된 완료 무시 > 오래된 시도 ID 의 완료는 현재 시도 상태를 바꾸지 않는다
+PASS  로드 경쟁 상태: 시도 ID · 겹침 금지 · 오래된 완료 무시 > 중복 finishCall 은 두 번째부터 무시
+PASS  로드 경쟁 상태: 시도 ID · 겹침 금지 · 오래된 완료 무시 > CharacterAdded 가 호출 반환보다 먼저 와도(onSpawned 선행) 호출이 끝나기 전까지 새 호출을 막고, 끝나면 재시도 없음
+PASS  로드 경쟁 상태: 시도 ID · 겹침 금지 · 오래된 완료 무시 > 늦은 캐릭터(타임아웃 후 도착)도 재시도를 취소하고 상태를 정리한다
+PASS  로드 경쟁 상태: 시도 ID · 겹침 금지 · 오래된 완료 무시 > 퇴장(remove) 후 도착한 완료는 무시, 재입장하면 새 상태(시도 ID 불일치)
+PASS  로드 경쟁 상태: 시도 ID · 겹침 금지 · 오래된 완료 무시 > hung(60초 무응답): 재시도 중단 로그, 이후 캐릭터가 도착하면 정상 복구
+PASS  로드 경쟁 상태: 시도 ID · 겹침 금지 · 오래된 완료 무시 > 같은 틱에 여러 플레이어: 시도 ID 는 전역 고유
+PASS  CharacterAdded 게이트: 중복 · 교체 · 퇴장 > 같은 모델의 중복 CharacterAdded 는 두 번째부터 무시
+PASS  CharacterAdded 게이트: 중복 · 교체 · 퇴장 > 더 새로운 스폰이 시작되면 이전 처리(yield 중)는 stale 이라 현재 캐릭터를 덮지 못한다
+PASS  CharacterAdded 게이트: 중복 · 교체 · 퇴장 > 오래된 모델의 늦은 Died 는 무시, 현재 모델의 Died 만 인정
+PASS  CharacterAdded 게이트: 중복 · 교체 · 퇴장 > 퇴장 중 완료: remove 후에는 진행 중이던 처리가 모두 stale, 사망도 불인정
+PASS  CharacterAdded 게이트: 중복 · 교체 · 퇴장 > 플레이어별로 독립
+PASS  ForceField 제거 범위 축소 (의도한 보호 효과는 보존) > 스폰 직후 창 안 + 기본 이름 + 속성·태그 없음 + 비관리: 엔진 스폰 ForceField 로 식별 → 제거
+PASS  ForceField 제거 범위 축소 (의도한 보호 효과는 보존) > 서버 관리 표시(RoBattlesManaged) 는 보존
+PASS  ForceField 제거 범위 축소 (의도한 보호 효과는 보존) > 창이 끝난 뒤의 ForceField 는 보존
+PASS  ForceField 제거 범위 축소 (의도한 보호 효과는 보존) > 식별 불가(다른 이름·속성·태그): 제거하지 않고 보고만
+PASS  ForceField 제거 범위 축소 (의도한 보호 효과는 보존) > ForceField 가 아니거나 시간 정보가 없으면 대상 아님
+PASS  ForceField 제거 범위 축소 (의도한 보호 효과는 보존) > shouldStripForceField 는 strip 일 때만 true
+PASS  SWORD LMB 3타 콤보 (14/14/18) > 1·2·3타 피해 14/14/18, 3타 뒤 다시 1타
+PASS  SWORD LMB 3타 콤보 (14/14/18) > 이어짐 창(1.2초)을 넘기면 1타부터 다시
+PASS  SWORD LMB 3타 콤보 (14/14/18) > 타격별 다중 대상 적중: 부채꼴 안의 모든 적
+PASS  SWORD LMB 3타 콤보 (14/14/18) > 쿨타임 안의 재입력은 거부(콤보 단계 유지), 부활 보호는 승인 시에만 해제
+PASS  SWORD LMB 3타 콤보 (14/14/18) > 패링에 막힌 타격은 피해 없음 + 자동 반격 18, 사망 후 입력 거부
+PASS  SWORD Skill 1 — Triple Slash (10/14/22) > 키 세 번: 10 → 14 → 22, 3번째 후 쿨타임(8초) 시작
+PASS  SWORD Skill 1 — Triple Slash (10/14/22) > 연계 사이 최소 간격(0.3초) 미만 거부, 창(1.5초) 만료 시 쿨타임 시작 후 처음부터
+PASS  SWORD Skill 1 — Triple Slash (10/14/22) > 타격별 전진: 이동 허가(TripleSlash)를 단계마다 발급, 이벤트에 dash 정보
+PASS  SWORD Skill 1 — Triple Slash (10/14/22) > 이동 허가 거부(제한 초과) 시 쿨타임·연계·보호를 소모하지 않는다
+PASS  SWORD Skill 1 — Triple Slash (10/14/22) > 패링에 막힌 타격은 피해 없음 + 반격
+PASS  SWORD Skill 2 — Lunge (충전 18~32, 경로 다중 적중) > 충전량에 비례한 피해: 즉시 18, 0.5초 25, 1초 이상 32
+PASS  SWORD Skill 2 — Lunge (충전 18~32, 경로 다중 적중) > 이동 경로상의 여러 적을 한 번씩 적중, 경로 밖/뒤쪽 적은 제외
+PASS  SWORD Skill 2 — Lunge (충전 18~32, 경로 다중 적중) > 같은 돌진에서 한 대상은 한 번만 맞는다(여러 틱 중복 없음)
+PASS  SWORD Skill 2 — Lunge (충전 18~32, 경로 다중 적중) > Release 는 충전 중일 때만 유효(위조 Release·중복 Release 거부), 충전 중 재Press 거부
+PASS  SWORD Skill 2 — Lunge (충전 18~32, 경로 다중 적중) > 쿨타임: 돌진 시작부터 9초, 그 사이 Press 거부
+PASS  SWORD Skill 2 — Lunge (충전 18~32, 경로 다중 적중) > 키를 떼는 요청이 없어도 최대 충전 + 유예 후 서버가 자동 발사
+PASS  SWORD Skill 2 — Lunge (충전 18~32, 경로 다중 적중) > 충전 중 다른 공격·스킬·궁극기는 busy, 회피는 충전 취소(쿨타임 소모 없음)
+PASS  SWORD Skill 2 — Lunge (충전 18~32, 경로 다중 적중) > 이동 허가(Lunge) 발급
+PASS  SWORD Skill 2 — Lunge (충전 18~32, 경로 다중 적중) > 이동 허가 거부 시 충전은 취소되고 쿨타임을 쓰지 않으며 돌진도 없다
+PASS  SWORD Skill 2 — Lunge (충전 18~32, 경로 다중 적중) > 사망 시 충전/돌진 상태 정리
+PASS  SWORD Skill 3 — Blade Wave (20, 부채꼴 광역) > 전방 부채꼴 안의 모든 적에게 20 피해, 뒤/밖은 제외
+PASS  SWORD Skill 3 — Blade Wave (20, 부채꼴 광역) > 쿨타임 6초, 거부 시 상태 유지
+PASS  SWORD Skill 3 — Blade Wave (20, 부채꼴 광역) > 패링한 상대에게는 차단되고 반격을 받는다
+PASS  SWORD Ultimate — Blade Storm (5×8 + 25) > 게이지 부족은 거부(소모 없음), 가득이면 발동하고 100% 소모
+PASS  SWORD Ultimate — Blade Storm (5×8 + 25) > 틱 8회 × 5 + 마무리 25 = 총 65, 반경 안의 모든 적, 밖은 제외
+PASS  SWORD Ultimate — Blade Storm (5×8 + 25) > 시전 중 다른 공격/스킬/재발동은 busy, 끝나면 다시 가능
+PASS  SWORD Ultimate — Blade Storm (5×8 + 25) > 시전 중 사망하면 남은 틱·마무리는 발생하지 않는다
+PASS  SWORD Ultimate — Blade Storm (5×8 + 25) > 부활 보호 중인 적은 맞지 않는다(체력·점수 변화 없음)
+PASS  SWORD Ultimate — Blade Storm (5×8 + 25) > 승인 시 부활 보호 해제, 거부(not_ready)는 보호 유지
+PASS  SWORD Passive — Duelist (3연속 +8, 전역 4초) > 순수 로직: 같은 대상 3번째 적중에 +8, 발동 후 4초 전역 제한
+PASS  SWORD Passive — Duelist (3연속 +8, 전역 4초) > 대상별 카운터는 독립, 다른 대상 적중이 카운터를 끊지 않음, 창(3초) 초과 시 초기화
+PASS  SWORD Passive — Duelist (3연속 +8, 전역 4초) > 공격자별 독립, 대상 사망/퇴장 시 해당 카운터 제거
+PASS  SWORD Passive — Duelist (3연속 +8, 전역 4초) > 통합: 같은 대상 LMB 3번째 적중 = 18 + 8 = 26, 이후 4초간 재발동 없음
+PASS  SWORD Passive — Duelist (3연속 +8, 전역 4초) > 차단(패링)·부활 보호·회피 무적으로 피해가 적용되지 않은 공격은 카운트되지 않는다
+PASS  SWORD Passive — Duelist (3연속 +8, 전역 4초) > Triple Slash 3타(22)도 Duelist 대상: 세 번째 22+8 = 30
+PASS  SWORD Passive — Duelist (3연속 +8, 전역 4초) > Blade Storm 틱은 Duelist 카운트/발동에 영향을 주지 않는다(임시 규칙 A66)
+PASS  SWORD 보안: 위조 입력·원격 검증·서버 권위 > RemoteSpec: Skill phase 는 Press/Release 만, 피해/대상 필드는 허용되지 않는다
+PASS  SWORD 보안: 위조 입력·원격 검증·서버 권위 > 라우터 경유: 스킬 3 정상 처리, 같은 요청 반복은 쿨타임 거부
+PASS  SWORD 보안: 위조 입력·원격 검증·서버 권위 > 시간 왜곡/원점 위조 요청은 게이트에서 거부되어 스킬이 실행되지 않는다
+PASS  SWORD 보안: 위조 입력·원격 검증·서버 권위 > 기절/행동 불가 중에는 스킬·콤보·궁극기 거부, 쿨타임 소모 없음
+PASS  SWORD 보안: 위조 입력·원격 검증·서버 권위 > 스킬은 클라이언트가 보낸 대상·피해 없이 서버 판정만 사용(조준 방향만 의사)
+PASS  SWORD 보안: 위조 입력·원격 검증·서버 권위 > HUD 스냅샷: SWORD 스킬 3칸 구현됨(이름·쿨타임), 콤보 단계, Duelist 제한 시각, 궁극기 구현됨
+PASS  SWORD 클라이언트 순수 로직 (입력·이동·연출·HUD) — 실제 렌더/입력은 Studio 미검증 > 숫자 2 누르면 Press, 떼면 Release 전송(서버 스키마 통과), 누르지 않은 Release 는 없음
+PASS  SWORD 클라이언트 순수 로직 (입력·이동·연출·HUD) — 실제 렌더/입력은 Studio 미검증 > 포커스를 잃으면 누르고 있던 Lunge 를 Release 로 정리
+PASS  SWORD 클라이언트 순수 로직 (입력·이동·연출·HUD) — 실제 렌더/입력은 Studio 미검증 > UI 가 열려 있으면 스킬 Press 는 막히고, 이미 누른 키의 Release 는 정리된다
+PASS  SWORD 클라이언트 순수 로직 (입력·이동·연출·HUD) — 실제 렌더/입력은 Studio 미검증 > dashVelocity: 서버 확정 속도·시간 동안만, 허가 상한 이하로 제한, 비정상 값은 nil
+PASS  SWORD 클라이언트 순수 로직 (입력·이동·연출·HUD) — 실제 렌더/입력은 Studio 미검증 > acceptDashEvent: 내 이벤트·dash 포함·최근·중복 아님만
+PASS  SWORD 클라이언트 순수 로직 (입력·이동·연출·HUD) — 실제 렌더/입력은 Studio 미검증 > EffectsModel: 콤보 3타/스킬/궁극기/Duelist 연출 큐
+PASS  SWORD 클라이언트 순수 로직 (입력·이동·연출·HUD) — 실제 렌더/입력은 Studio 미검증 > 모든 SWORD 연출 큐가 EffectCatalog 에 정의되어 있다
+PASS  SWORD 클라이언트 순수 로직 (입력·이동·연출·HUD) — 실제 렌더/입력은 Studio 미검증 > FeedbackModel: 내 스킬 적중은 타격 표시, 내 Duelist 만 토스트, busy 거부 안내
+PASS  SWORD 클라이언트 순수 로직 (입력·이동·연출·HUD) — 실제 렌더/입력은 Studio 미검증 > HudModel: SWORD 스킬 이름·쿨타임·연계/충전 상태, 콤보, Duelist, 궁극기
+PASS  SWORD 클라이언트 순수 로직 (입력·이동·연출·HUD) — 실제 렌더/입력은 Studio 미검증 > 구현 모듈이 없는 캐릭터(GUNNER)는 스킬/궁극기 미구현 표시
+PASS  캐릭터별 최대 체력 > 확정 수치: SWORD 110 / PAINTBALL 95, 데이터에 있고 DamageService 에 반영
+PASS  캐릭터별 최대 체력 > HUD 스냅샷의 최대 체력은 캐릭터별 값
+PASS  캐릭터별 최대 체력 > PAINTBALL 은 95 피해에 사망, 94에는 생존(체력 1)
+PASS  캐릭터별 최대 체력 > 캐릭터 변경은 다음 리스폰에서 새 최대 체력으로 가득 채워진다(SWORD → PAINTBALL → SWORD)
+PASS  캐릭터별 최대 체력 > setMaxHealth 는 비정상 값을 거부하고, 체력은 최대치를 넘지 않는다
+PASS  PAINTBALL LMB — Paint Shot (7, 초당 3발, 탄창 16, 재장전 1.2초) > 확정 수치
+PASS  PAINTBALL LMB — Paint Shot (7, 초당 3발, 탄창 16, 재장전 1.2초) > 서버 투사체가 날아가 명중하면 피해 7
+PASS  PAINTBALL LMB — Paint Shot (7, 초당 3발, 탄창 16, 재장전 1.2초) > 초당 3발: 간격 미만은 on_cooldown, 탄약 소모는 성공한 발사만
+PASS  PAINTBALL LMB — Paint Shot (7, 초당 3발, 탄창 16, 재장전 1.2초) > 같은 순간 100번 요청해도 1발만 나간다(연타·중복 요청)
+PASS  PAINTBALL LMB — Paint Shot (7, 초당 3발, 탄창 16, 재장전 1.2초) > 탄창 16발: 마지막 발 후 자동 재장전 1.2초, 장전 중 발사 불가, 완료 후 가득
+PASS  PAINTBALL LMB — Paint Shot (7, 초당 3발, 탄창 16, 재장전 1.2초) > 탄약 0에서 발사 시도는 no_ammo(투사체·쿨타임 소모 없음) + 재장전 시작
+PASS  PAINTBALL LMB — Paint Shot (7, 초당 3발, 탄창 16, 재장전 1.2초) > 원거리 자동 조준 보정 없음: 15도 빗나가면 명중하지 않는다
+PASS  PAINTBALL LMB — Paint Shot (7, 초당 3발, 탄창 16, 재장전 1.2초) > 재장전 R: 가득이면 거부, 사용 후 허용, 이미 장전 중 거부
+PASS  PAINTBALL LMB — Paint Shot (7, 초당 3발, 탄창 16, 재장전 1.2초) > 사망 후 발사 불가, 이미 발사한 투사체는 유지되어 명중
+PASS  PAINTBALL LMB — Paint Shot (7, 초당 3발, 탄창 16, 재장전 1.2초) > 부활 보호: 거부된 발사(재장전·쿨타임)는 해제하지 않고, 성공한 발사만 해제
+PASS  PAINTBALL RMB — Paint Burst (5발×5, 최대 25, 탄 3, 후딜 1초) > 독립 투사체 5개가 같은 대상에 모두 적중하면 25(다중 적중 허용, 최대 25)
+PASS  PAINTBALL RMB — Paint Burst (5발×5, 최대 25, 탄 3, 후딜 1초) > 탄약 3 소모, 탄약 2 이하면 거부(탄약·쿨타임·보호 불변)
+PASS  PAINTBALL RMB — Paint Burst (5발×5, 최대 25, 탄 3, 후딜 1초) > 후딜(쿨타임) 1초: 0.9초에 거부, 1.0초에 허용
+PASS  PAINTBALL RMB — Paint Burst (5발×5, 최대 25, 탄 3, 후딜 1초) > 산탄: 중거리에서는 일부만 맞는다(결정적 패턴, 25 초과 불가)
+PASS  PAINTBALL RMB — Paint Burst (5발×5, 최대 25, 탄 3, 후딜 1초) > 탄이 3 남았을 때 발사하면 0이 되어 자동 재장전, 장전 중 거부
+PASS  PAINTBALL RMB — Paint Burst (5발×5, 최대 25, 탄 3, 후딜 1초) > 재장전 중에는 Burst 불가
+PASS  PAINTBALL RMB — Paint Burst (5발×5, 최대 25, 탄 3, 후딜 1초) > 투사체 상한이면 일부만 나가지 않고 통째로 거부(탄약·쿨타임 불변)
+PASS  PAINTBALL Skill 1 — Color Bomb (광역 24, 쿨 9) > 대상에게 맞아 폭발: 반경 안 모든 적 24, 밖은 0, 시전자는 피해 없음
+PASS  PAINTBALL Skill 1 — Color Bomb (광역 24, 쿨 9) > 직접 피해 없음: 같은 대상에 중복 피해가 없다(폭발 1회만)
+PASS  PAINTBALL Skill 1 — Color Bomb (광역 24, 쿨 9) > 바닥/벽에 맞아도 그 지점에서 폭발한다(지면 평면 사용)
+PASS  PAINTBALL Skill 1 — Color Bomb (광역 24, 쿨 9) > 벽이 폭발을 가린다: 벽 너머 대상은 반경 안이어도 피해 없음
+PASS  PAINTBALL Skill 1 — Color Bomb (광역 24, 쿨 9) > 쿨타임 9초: 8.9초 거부, 9초 허용, 거부 시 상태 불변
+PASS  PAINTBALL Skill 1 — Color Bomb (광역 24, 쿨 9) > 탄약·재장전과 무관: 탄이 0이거나 재장전 중에도 사용 가능(탄약 불변)
+PASS  PAINTBALL Skill 1 — Color Bomb (광역 24, 쿨 9) > 시전자 사망 후에도 날아간 폭탄은 폭발한다(이미 발사한 투사체 규칙)
+PASS  PAINTBALL Skill 2 — Piercing Shot (대상당 30, 최대 3명, 쿨 12) > 한 줄로 선 적 3명을 관통해 각각 30, 4번째는 맞지 않는다
+PASS  PAINTBALL Skill 2 — Piercing Shot (대상당 30, 최대 3명, 쿨 12) > 같은 대상은 한 번만 맞는다(이중 적중 없음)
+PASS  PAINTBALL Skill 2 — Piercing Shot (대상당 30, 최대 3명, 쿨 12) > 벽에서 멈춘다: 벽 너머는 맞지 않는다
+PASS  PAINTBALL Skill 2 — Piercing Shot (대상당 30, 최대 3명, 쿨 12) > 쿨타임 12초
+PASS  PAINTBALL Skill 2 — Piercing Shot (대상당 30, 최대 3명, 쿨 12) > 피해는 서버 데이터만: 클라이언트가 보낸 damage/대상 필드는 효과 없음
+PASS  PAINTBALL Skill 3 — Paint Slide (12 스터드, 쿨 7, 이동 허가) > 이동 허가(PaintSlide) 발급 + 이벤트에 거리 12·dash 정보, 쿨타임 7초
+PASS  PAINTBALL Skill 3 — Paint Slide (12 스터드, 쿨 7, 이동 허가) > 허가 상한 안의 속도: 12스터드/0.4초 = 30 ≤ PaintSlide 상한 45
+PASS  PAINTBALL Skill 3 — Paint Slide (12 스터드, 쿨 7, 이동 허가) > 서버가 허가를 거부하면 슬라이드·쿨타임 소모 없음
+PASS  PAINTBALL Skill 3 — Paint Slide (12 스터드, 쿨 7, 이동 허가) > 벽이 가까우면 거리가 줄고, 거의 막혀 있으면(1 미만) 거부 + 쿨타임 불변
+PASS  PAINTBALL Skill 3 — Paint Slide (12 스터드, 쿨 7, 이동 허가) > 슬라이드 중에도 LMB·RMB 사용 가능, 무적 없음(피해를 받는다)
+PASS  PAINTBALL Skill 3 — Paint Slide (12 스터드, 쿨 7, 이동 허가) > 판정 없는 이동기: 부활 보호를 해제하지 않는다(공격 행동이 아님)
+PASS  PAINTBALL Skill 3 — Paint Slide (12 스터드, 쿨 7, 이동 허가) > HUD: 슬라이드 중 상태 sliding, 이후 해제
+PASS  PAINTBALL Ultimate — Color Break (전조 0.8초, 빔 2.5초, 0.25초마다 6, 최대 60) > 확정 수치
+PASS  PAINTBALL Ultimate — Color Break (전조 0.8초, 빔 2.5초, 0.25초마다 6, 최대 60) > 게이지 부족은 거부(게이지·보호 불변), 가득이면 발동하고 100% 소모
+PASS  PAINTBALL Ultimate — Color Break (전조 0.8초, 빔 2.5초, 0.25초마다 6, 최대 60) > 전조 0.8초 동안은 피해 없음, 이후 0.25초마다 6, 정지 대상은 총 60(최대)
+PASS  PAINTBALL Ultimate — Color Break (전조 0.8초, 빔 2.5초, 0.25초마다 6, 최대 60) > 대상당 최대 60: 틱 간격이 어긋나도(큰 dt) 틱 수는 10회로 고정
+PASS  PAINTBALL Ultimate — Color Break (전조 0.8초, 빔 2.5초, 0.25초마다 6, 최대 60) > 일직선의 여러 적을 동시에 맞힌다
+PASS  PAINTBALL Ultimate — Color Break (전조 0.8초, 빔 2.5초, 0.25초마다 6, 최대 60) > 조준 가능: 빔 시전 중 Aim 갱신을 따라가며 판정 대상이 바뀐다
+PASS  PAINTBALL Ultimate — Color Break (전조 0.8초, 빔 2.5초, 0.25초마다 6, 최대 60) > Aim 은 시전 중에만 유효: 시전 전/후 Aim 은 거부되고 상태 불변
+PASS  PAINTBALL Ultimate — Color Break (전조 0.8초, 빔 2.5초, 0.25초마다 6, 최대 60) > 벽이 빔을 막는다
+PASS  PAINTBALL Ultimate — Color Break (전조 0.8초, 빔 2.5초, 0.25초마다 6, 최대 60) > 시전 중(전조 포함) 사망하면 이후 틱 없음, 궁극기 종료
+PASS  PAINTBALL Ultimate — Color Break (전조 0.8초, 빔 2.5초, 0.25초마다 6, 최대 60) > 전조 중 사망하면 피해가 한 번도 발생하지 않는다
+PASS  PAINTBALL Ultimate — Color Break (전조 0.8초, 빔 2.5초, 0.25초마다 6, 최대 60) > 자발적 취소 불가 / 재발동 거부는 게이지를 소모하지 않는다
+PASS  PAINTBALL Ultimate — Color Break (전조 0.8초, 빔 2.5초, 0.25초마다 6, 최대 60) > 빔 틱의 attackId 는 틱마다 고유: 한 틱에 같은 대상 중복 적용 없음
+PASS  PAINTBALL Ultimate — Color Break (전조 0.8초, 빔 2.5초, 0.25초마다 6, 최대 60) > 궁극기는 Color Reload 패시브를 발동시키지 않는다
+PASS  PAINTBALL Passive — Color Reload (탄 3 회복, 재발동 5초) > 확정 수치
+PASS  PAINTBALL Passive — Color Reload (탄 3 회복, 재발동 5초) > Paint Burst 유효 적중: 탄 3 회복(비용 3 → 순증 0), 한 번의 Burst 에서 5발이 맞아도 1회만
+PASS  PAINTBALL Passive — Color Reload (탄 3 회복, 재발동 5초) > 재발동 5초: 5초 안의 두 번째 유효 적중은 회복 없음, 5초 후 다시 회복
+PASS  PAINTBALL Passive — Color Reload (탄 3 회복, 재발동 5초) > Color Bomb·Piercing Shot 유효 적중도 3 회복
+PASS  PAINTBALL Passive — Color Reload (탄 3 회복, 재발동 5초) > LMB 적중·Paint Slide·궁극기는 발동하지 않는다
+PASS  PAINTBALL Passive — Color Reload (탄 3 회복, 재발동 5초) > 재장전 중 유효 적중: 재장전 즉시 취소 + 탄 회복, 옛 완료 시각에 탄이 덮어써지지 않는다
+PASS  PAINTBALL Passive — Color Reload (탄 3 회복, 재발동 5초) > 탄창이 가득이고 재장전 중도 아니면 발동·잠금 모두 일어나지 않는다(A69)
+PASS  PAINTBALL Passive — Color Reload (탄 3 회복, 재발동 5초) > 피해가 적용되지 않은 적중(부활 보호·회피 무적)은 유효 적중이 아니다
+PASS  PAINTBALL Passive — Color Reload (탄 3 회복, 재발동 5초) > 발사 후 사망→부활(같은 캐릭터)하면 이전 생애 투사체의 적중은 패시브를 발동시키지 않는다
+PASS  PAINTBALL Passive — Color Reload (탄 3 회복, 재발동 5초) > 캐릭터 변경 후 이전 PAINTBALL 투사체 적중은 새 캐릭터에 영향 없음
+PASS  PAINTBALL 보안·상태 정리 > RemoteSpec: Aim 리모트는 단위 방향·원점·시각만, 피해/대상 필드는 허용되지 않는다
+PASS  PAINTBALL 보안·상태 정리 > SelectCharacter 로 PAINTBALL 선택 가능(스키마 통과)
+PASS  PAINTBALL 보안·상태 정리 > 라우터 경유: 스킬 1 정상 처리, 같은 요청 반복은 쿨타임 거부, 위조 시각은 게이트 거부
+PASS  PAINTBALL 보안·상태 정리 > 라우터 경유: Aim 은 시전 중이 아니면 no_aim_use/거부, 죽은 뒤에는 게이트가 거부
+PASS  PAINTBALL 보안·상태 정리 > PAINTBALL 스킬에는 충전/해제가 없다: 위조 Release 는 거부되고 아무 상태도 바꾸지 않는다
+PASS  PAINTBALL 보안·상태 정리 > 사망 상태·기절 상태에서는 모든 행동 거부, 쿨타임·탄약 불변
+PASS  PAINTBALL 보안·상태 정리 > 캐릭터 변경·부활 시 슬라이드/궁극기/패시브 잠금/탄약이 초기화된다
+PASS  PAINTBALL 보안·상태 정리 > 퇴장 시 모듈 상태 정리(빔 중 퇴장해도 남는 틱 없음)
+PASS  PAINTBALL 보안·상태 정리 > 12명이 동시에 Burst·Bomb·Slide: 오류 없이 처리, 투사체 총량은 상한 이내, 결과는 결정적(두 번 실행해 동일)
+PASS  PAINTBALL 보안·상태 정리 > HUD 스냅샷: 스킬 3칸·궁극기·패시브·탄약·보조 쿨타임이 구현됨으로 표시
+PASS  PAINTBALL 클라이언트 순수 로직 > 자동 연사: LMB 를 누르고 있는 동안 간격마다 Attack 요청, 떼면 중단, 비자동 캐릭터는 없음
+PASS  PAINTBALL 클라이언트 순수 로직 > 자동 연사는 설정창이 열려 있으면 멈춘다
+PASS  PAINTBALL 클라이언트 순수 로직 > Aim 전송 시점: 시전 중에만 주기마다, 끝나면 타이머 초기화
+PASS  PAINTBALL 클라이언트 순수 로직 > Aim 페이로드는 서버 스키마를 통과한다
+PASS  PAINTBALL 클라이언트 순수 로직 > Paint Slide 이벤트(CharSkill + dash)는 이동으로 수용, 남의 이벤트·오래된 이벤트·중복은 거부
+PASS  PAINTBALL 클라이언트 순수 로직 > 서버 CharSkill 이벤트 → 카탈로그에 있는 큐만 재생, 모르는 큐는 무시
+PASS  PAINTBALL 클라이언트 순수 로직 > Color Bomb(Arc)·Piercing(Pierce) 투사체와 폭발 이벤트 → 전용 큐, 포물선 위치는 서버와 같은 중력식
+PASS  PAINTBALL 클라이언트 순수 로직 > 서버가 보내는 모든 PAINTBALL 큐 이름이 카탈로그에 있다(실제 이벤트 수집)
+PASS  PAINTBALL 클라이언트 순수 로직 > Color Reload 발동 알림(내 것만 토스트), 탄약 부족 거부 안내
+PASS  PAINTBALL 클라이언트 순수 로직 > HUD: 스킬 3칸·슬라이드·궁극기 전조/발동·Color Reload 잠금 표시
 PASS  EffectsModel: 이벤트 → 연출 큐 > Swing → sword.slash (내 것 mine=true)
 PASS  EffectsModel: 이벤트 → 연출 큐 > 패링 시작/성공/반격 표시
 PASS  EffectsModel: 이벤트 → 연출 큐 > Damaged → 피격 번쩍임 + 충격 연출, 공격자 관점 mine 구분
@@ -435,16 +591,5 @@ PASS  통합: 서버/클라이언트 동기화 > Correct 이벤트 수용: 최�
 PASS  통합: 서버/클라이언트 동기화 > dodgeVelocity: 서버가 줄인 거리 반영, 0이면 이동 없음, 기본 거리 초과 값은 제한
 PASS  통합: 서버/클라이언트 동기화 > 서버 보정 → 같은 위치 재관찰은 ok: 보정이 반복 루프를 만들지 않는다
 
-합계: 430 통과 / 0 실패 / 430 전체
+합계: 586 통과 / 0 실패 / 586 전체
 ```
-
-## 로드 경쟁 수정 후 (CLI)
-- 전투 448/448 (기존 430 + 경쟁 회귀 18), 맵 58/58, 프로젝트 검사 이상 없음. Studio 미실행 — S33~S57 모두 미검증.
-
-## 코드 동결 점검 (CLI)
-- 전투 450/450 (448 유지 + ForceField 분류·hung 상태 2), 맵 58/58, check_projects 이상 없음, check_remotes 8/8, 구문 검사 이상 없음.
-- Studio 미실행: S33~S57 전부 미검증. 인계: docs/STUDIO_HANDOFF.md
-
-## Phase 2 Step 1 — SWORD (CLI)
-- 전투 502/502 (기존 450 유지 + SWORD 신규 52 / 일부 기존 테스트 SWORD→PAINTBALL 로 갱신, 보안·회귀 검증 유지), 맵 58/58, check_projects·check_remotes 이상 없음, luau-analyze 구문 오류 0건(올바른 경로로 재검사).
-- Studio 미실행: S33~S75 전부 미검증.

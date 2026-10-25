@@ -23,6 +23,10 @@ function FeedbackModel.translate(event, myId)
 		if mine and event.phase == "Cancel" then
 			table.insert(out, { kind = "Toast", text = "Lunge 취소됨" })
 		end
+	elseif t == "CharSkill" then
+		if event.playerId == myId and event.cue == "paint.reload.proc" then
+			table.insert(out, { kind = "Toast", text = string.format("Color Reload +%d", event.restored or 0) })
+		end
 	elseif t == "Duelist" then
 		if event.playerId == myId then
 			table.insert(out, { kind = "Toast", text = string.format("Duelist +%d", event.bonus or 0) })
@@ -58,6 +62,8 @@ function FeedbackModel.translate(event, myId)
 			msg = "궁극기는 아직 구현되지 않았습니다"
 		elseif event.reason == "skill_not_implemented" then
 			msg = "이 캐릭터의 스킬은 아직 구현되지 않았습니다"
+		elseif event.reason == "no_ammo" then
+			msg = "탄약이 부족합니다"
 		elseif event.reason == "busy" then
 			msg = "다른 동작 중에는 사용할 수 없습니다"
 		end

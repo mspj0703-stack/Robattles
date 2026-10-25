@@ -181,12 +181,14 @@ function EffectPlayer:_play(cue)
 		self:_sound(def.sound, root)
 	elseif def.style == "Burst" or def.style == "Poof" then
 		local target = rootOf(cue.targetId or cue.playerId or 0)
-		local pos = target and target.Position or (cue.pos and Vector3.new(cue.pos.X, cue.pos.Y, cue.pos.Z))
+		-- 위치가 지정된 큐(폭발 등)는 그 위치에, 아니면 대상 몸 위치에 재생. 반경이 있으면 크기에 반영.
+		local pos = (cue.pos and Vector3.new(cue.pos.X, cue.pos.Y, cue.pos.Z)) or (target and target.Position)
 		if pos then
-			local part = ghostPart(Vector3.one * def.size * 0.4, CFrame.new(pos), col, 0.2)
+			local size = (type(cue.radius) == "number" and cue.radius > 0) and cue.radius * 2 or def.size
+			local part = ghostPart(Vector3.one * size * 0.4, CFrame.new(pos), col, 0.2)
 			part.Shape = Enum.PartType.Ball
 			part.Parent = self._folder
-			self:_fade(part, def.lifetime, Vector3.one * def.size)
+			self:_fade(part, def.lifetime, Vector3.one * size)
 			self:_sound(def.sound, target or part)
 		end
 	elseif def.style == "Muzzle" then
@@ -197,6 +199,17 @@ function EffectPlayer:_play(cue)
 			part.Parent = self._folder
 			self:_fade(part, def.lifetime, Vector3.one * def.size * 0.3)
 			self:_sound(def.sound, root or part)
+		end
+	elseif def.style == "Beam" and cue.origin and cue.tip then
+		-- 빔 한 틱: 서버가 확정한 시작~끝 선분을 얇은 네온 막대로 그린다(시각 전용)
+		local a = Vector3.new(cue.origin.X, cue.origin.Y, cue.origin.Z)
+		local b = Vector3.new(cue.tip.X, cue.tip.Y, cue.tip.Z)
+		local len = (b - a).Magnitude
+		if len > 0.1 then
+			local part = ghostPart(Vector3.new(def.size, def.size, len), CFrame.lookAt(a, b) * CFrame.new(0, 0, -len / 2), col, 0.2)
+			part.Parent = self._folder
+			self:_fade(part, def.lifetime)
+			self:_sound(def.sound, part)
 		end
 	elseif def.style == "Splat" and cue.pos then
 		local part = ghostPart(Vector3.new(def.size, 0.1, def.size), CFrame.new(cue.pos.X, cue.pos.Y, cue.pos.Z), col, 0.1)

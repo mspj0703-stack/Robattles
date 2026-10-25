@@ -17,6 +17,12 @@ local ActionPolicy = require(script.Parent.ActionPolicy)
 local Vec = Link.shared("Vec")
 local Hitbox = require(script.Parent.HitboxService)
 local SwordSkills = require(script.Parent.SwordSkills)
+local PaintballSkills = require(script.Parent.PaintballSkills)
+
+-- 캐릭터 데이터의 `module` 이름 → 서버 로직 모듈(Phase 2). 모듈이 없는 캐릭터는 공통 경로(근접/직선 발사)로 처리한다.
+local IMPLS = {
+	Paintball = PaintballSkills,
+}
 
 local CharacterController = {}
 CharacterController.__index = CharacterController
@@ -80,6 +86,63 @@ function CharacterController.new(deps)
 		end,
 	})
 
+	-- 캐릭터별 모듈(PAINTBALL 등). 모든 모듈은 같은 deps 와 같은 인터페이스(primary/secondary/skill/ultimate*/update/reset/hudInfo)를 쓴다.
+	self._impl = {}
+	for characterId, def in self._chars do
+		local ctor = def.module and IMPLS[def.module]
+		if ctor then
+			self._impl[characterId] = ctor.new({
+				cfg = self._cfg,
+				core = self._core,
+				characters = self._chars,
+				projectiles = self._projectiles,
+				getPose = function(id)
+					return self._getPose(id)
+				end,
+				targets = function()
+					return self._targets()
+				end,
+				world = self._world,
+				movement = self._movement,
+				emit = function(event)
+					self:_emit(event)
+				end,
+				approve = function(id, actionDef, now)
+					self:approveAction(id, actionDef, now)
+				end,
+				nextAttackId = function(id)
+					return self:_nextAttackId(id)
+				end,
+				setSlow = function(id, untilT, mult)
+					local st = self._p[id]
+					if st then
+						st.slowUntil, st.slowMult = untilT, mult
+					end
+				end,
+				stopRunning = function(id)
+					local st = self._p[id]
+					if st then
+						st.running = false
+					end
+				end,
+				canAct = function(id, now)
+					local st = self._p[id]
+					return st ~= nil and st.alive and self._core.damage:isAlive(id) and self._core.status:canAct(id, now)
+				end,
+				state = function(id)
+					return self._p[id]
+				end,
+				startReload = function(id, now)
+					local st = self._p[id]
+					if st then
+						self:_startReload(st, now)
+					end
+				end,
+			})
+		end
+	end
+	self._aim = {} -- [id] = 최근 Aim 리모트 방향(검증된 단위 벡터)
+
 	-- 패링(확정): 방어 가능한 공격이 전방 180°에서 들어올 때만 차단하고 자동 반격한다.
 	self._core.damage:addBlocker(function(req, now)
 		return self:_parryBlocker(req, now)
@@ -118,6 +181,12 @@ function CharacterController:_resetCharacterState(st)
 	if self._sword then
 		self._sword:reset(st.id)
 	end
+	if self._impl then
+		for _, impl in self._impl do
+			impl:reset(st.id, nil, "State")
+		end
+	end
+	self._aim[st.id] = nil
 end
 
 -- 부활 보호 해제(서버 권위). reason: "Attack" | "Expired" | "Died". 이미 해제됐으면 아무것도 하지 않는다.
@@ -154,13 +223,17 @@ end
 function CharacterController:addPlayer(id, characterId)
 	local ch = characterId or DEFAULT_CHARACTER
 	assert(self._chars[ch], "알 수 없는 캐릭터: " .. tostring(ch))
-	self._core:addPlayer(id, ch)
+	self._core:addPlayer(id, ch, self._chars[ch].maxHealth)
 	local st = { id = id, characterId = ch, running = false, alive = true }
 	self._p[id] = st
 	self:_resetCharacterState(st)
 end
 
 function CharacterController:removePlayer(id, now)
+	for _, impl in self._impl do
+		impl:reset(id, now, "Removed")
+	end
+	self._aim[id] = nil
 	self._sword:reset(id)
 	self._sword:onTargetGone(id)
 	self._projectiles:ownerRemoved(id, now)
@@ -179,6 +252,10 @@ end
 function CharacterController:getCharacterId(id)
 	local st = self._p[id]
 	return st and st.characterId
+end
+
+function CharacterController:getMaxHealth(id)
+	return self._core.damage:getMaxHealth(id)
 end
 
 function CharacterController:getAmmo(id)
@@ -266,6 +343,10 @@ function CharacterController:handleDeath(id, now)
 		return
 	end
 	st.alive = false
+	for _, impl in self._impl do
+		impl:reset(id, now, "Death")
+	end
+	self._aim[id] = nil
 	self._sword:reset(id)
 	self._sword:endStorm(id, "Death", now)
 	self:_releaseProtection(id, st, now, "Died")
@@ -288,6 +369,7 @@ function CharacterController:respawn(id, now)
 	self._projectiles:ownerRespawned(id)
 	st.characterId = self._core.ultimate:getCharacter(id) or st.characterId
 	st.alive = true
+	self._core.damage:setMaxHealth(id, self:_def(st).maxHealth or self._cfg.Combat.MaxHealth, true) -- 캐릭터별 HP(확정)
 	self:_resetCharacterState(st)
 	-- 부활 보호: 부활 직후 RespawnProtectionSeconds 동안 피해 면역. 만료/공격 시작은 서버가 판정한다.
 	local protectSeconds = self._cfg.Match.RespawnProtectionSeconds
@@ -333,6 +415,14 @@ function CharacterController:handleAttack(id, payload, now)
 		return false, "no_pose"
 	end
 	local def = self:_def(st)
+	local impl = self._impl[st.characterId]
+	if impl then
+		-- 캐릭터 모듈이 거부 사유를 모두 확인한 뒤 approveAction 을 직접 호출한다(거부되면 보호·쿨타임·탄약 불변).
+		if payload.action == "Secondary" then
+			return impl:secondary(id, payload, pose, now)
+		end
+		return impl:primary(id, payload, pose, now)
+	end
 	if payload.action == "Secondary" then
 		if self._sword:isBusy(id) then
 			return false, "busy"
@@ -485,7 +575,7 @@ function CharacterController:handleSkill(id, payload, now)
 		if not pose then
 			return false, "no_pose"
 		end
-		return self._sword:skill(id, payload.slot, payload, pose, now)
+		return (self._impl[st.characterId] or self._sword):skill(id, payload.slot, payload, pose, now)
 	end
 	local okAct, why = self:_actionable(id, now)
 	if not okAct then
@@ -495,7 +585,25 @@ function CharacterController:handleSkill(id, payload, now)
 	if not pose then
 		return false, "no_pose"
 	end
-	return self._sword:skill(id, payload.slot, payload, pose, now)
+	return (self._impl[st.characterId] or self._sword):skill(id, payload.slot, payload, pose, now)
+end
+
+-- Aim 리모트: 시전 중 조준 갱신(Color Break 등). 모듈이 쓰지 않는 상태에서는 저장만 한다(무해).
+function CharacterController:handleAim(id, payload, now)
+	local st, why = self:_actionable(id, now)
+	if not st then
+		return false, why
+	end
+	local dir = Vec.normalize(payload.aimDirection)
+	if not dir then
+		return false, "bad_direction"
+	end
+	self._aim[id] = dir
+	local impl = self._impl[st.characterId]
+	if impl and impl.onAim then
+		return impl:onAim(id, dir, now), nil
+	end
+	return false, "no_aim_use"
 end
 
 function CharacterController:handleReload(id, now)
@@ -573,6 +681,26 @@ function CharacterController:handleUltimate(id, payload, now)
 			return false, "ultimate_not_implemented"
 		end
 	end
+	local impl = self._impl[st.characterId]
+	if impl then
+		local pose = self._getPose(id)
+		if not pose then
+			return false, "no_pose"
+		end
+		-- 게이지를 쓰기 전에 모든 거부 사유를 확인한다.
+		local okPre, whyPre = impl:canUltimate(id, payload, pose, now)
+		if not okPre then
+			return false, whyPre
+		end
+		local ok, reason = self._core.ultimate:activate(id, now, impl:ultimateDef(id, now), { canAct = true })
+		if not ok then
+			return false, reason
+		end
+		self:approveAction(id, { kind = "Ultimate" }, now)
+		impl:startUltimate(id, payload, pose, now)
+		self:_emit({ type = "Ultimate", playerId = id, time = now })
+		return true, nil
+	end
 	local isSword = def.ultimate ~= nil and def.ultimate.id == "BladeStorm"
 	if isSword and self._sword:isBusy(id) then
 		return false, "busy" -- 게이지를 소모하기 전에 거부
@@ -611,7 +739,7 @@ function CharacterController:getHudSnapshot(id, now)
 		characterId = st.characterId,
 		pendingCharacterId = core.ultimate:getPendingCharacter(id),
 		alive = st.alive and core.damage:isAlive(id),
-		health = { cur = core.damage:getHealth(id), max = self._cfg.Combat.MaxHealth },
+		health = { cur = core.damage:getHealth(id), max = core.damage:getMaxHealth(id) },
 		running = st.running,
 		moveSpeed = self:getMoveSpeed(id, now),
 		canAct = core.status:canAct(id, now),
@@ -636,13 +764,28 @@ function CharacterController:getHudSnapshot(id, now)
 		protectSeconds = self._cfg.Match.RespawnProtectionSeconds,
 		hasSecondary = def.secondary ~= nil,
 	}
-	if def.skills then
+	if def.skills and not self._impl[st.characterId] then
 		local info = self._sword:hudInfo(id, now)
 		snap.skills = info.skills
 		snap.combo = { step = info.comboStep, steps = info.comboSteps }
 		snap.passive = { id = def.passive.id, lockedUntil = info.duelistLockedUntil }
 		snap.ultimate.name = def.ultimate.name
 		snap.ultimate.active = snap.ultimate.active or info.stormActive
+	end
+	local implHud = self._impl[st.characterId]
+	if implHud then
+		local info = implHud:hudInfo(id, now)
+		snap.skills = info.skills
+		snap.passive = info.passive
+		snap.extra = info.extra
+		if info.secondary then
+			snap.cooldowns.secondary = info.secondary
+		end
+		if info.ultimate then
+			snap.ultimate.name = info.ultimate.name
+			snap.ultimate.active = snap.ultimate.active or info.ultimate.active
+			snap.ultimate.windupUntil = info.ultimate.windupUntil
+		end
 	end
 	if def.ammo then
 		snap.ammo = { cur = st.ammo, mag = def.ammo.magazine, reloadingUntil = st.reloadingUntil, reloadSeconds = def.ammo.reloadSeconds }
@@ -679,6 +822,9 @@ function CharacterController:update(now, dt)
 	end
 	self._core.ultimate:tick(dt)
 	self._sword:update(now) -- 돌진 경로 판정, Blade Storm 틱/마무리는 궁극기 종료 처리보다 먼저
+	for _, impl in self._impl do
+		impl:update(now) -- 캐릭터 모듈의 지속 효과(빔 틱 등)도 궁극기 종료 처리보다 먼저
+	end
 	self._core.ultimate:update(now)
 	self._projectiles:step(now)
 	if now - self._lastPrune >= 1 then

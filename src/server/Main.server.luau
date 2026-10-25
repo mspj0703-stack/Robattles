@@ -388,8 +388,6 @@ local function onCharacter(player, model)
 	spawnGate:commit(id, epoch, model)
 	characterModels[id] = model
 	world.addIgnore(model)
-	hum.MaxHealth = Config.Combat.MaxHealth
-	hum.Health = Config.Combat.MaxHealth
 	verifyPlacement(player, model)
 	local hrpNow = model:FindFirstChild("HumanoidRootPart")
 	if hrpNow then
@@ -405,6 +403,9 @@ local function onCharacter(player, model)
 		end
 	end)
 	controller:respawn(id, now())
+	-- 캐릭터별 최대 체력(확정): 부활 시 선택된 캐릭터의 HP 로 표시용 Humanoid 를 맞춘다(판정은 DamageService).
+	hum.MaxHealth = controller:getMaxHealth(id)
+	hum.Health = controller:getMaxHealth(id)
 	model:SetAttribute("CharacterId", controller:getCharacterId(id)) -- 클라이언트 임시 무기 모델용(읽기 전용 정보)
 	hum.Died:Connect(function()
 		if spawnGate:acceptsDeath(id, epoch, model) then -- 교체된/퇴장한 캐릭터의 늦은 Died 는 현재 상태를 덮어쓰지 못한다

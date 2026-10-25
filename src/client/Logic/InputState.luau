@@ -36,8 +36,39 @@ function InputState:setBinds(binds)
 	end
 end
 
-function InputState:setCharacter(characterId, hasAmmo)
+function InputState:setCharacter(characterId, hasAmmo, automatic)
 	self.hasAmmo = hasAmmo == true
+	self.automatic = automatic == true -- 자동 연사 캐릭터(PAINTBALL): LMB 를 누르고 있으면 반복 발사 요청
+end
+
+-- LMB 를 누르고 있는 동안의 반복 발사 요청(자동 연사 캐릭터만). 서버가 간격·탄약을 다시 검증하므로 요청이 빨라도 안전하다.
+function InputState:autoFire(now, interval)
+	if not self.automatic or self.uiBlocking then
+		return nil
+	end
+	local key = self._binds.Primary
+	if not key or not self.held[key] then
+		return nil
+	end
+	if self._lastPrimaryAt and now - self._lastPrimaryAt < interval then
+		return nil
+	end
+	self._lastPrimaryAt = now
+	self.running = false
+	return { remote = "Attack", action = "Primary" }
+end
+
+-- 시전 중 조준 갱신 전송 시점(Aim 리모트). active 가 아니면 항상 false 이고 타이머를 초기화한다.
+function InputState:aimDue(now, active, interval)
+	if not active or self.uiBlocking then
+		self._lastAimAt = nil
+		return false
+	end
+	if self._lastAimAt and now - self._lastAimAt < interval then
+		return false
+	end
+	self._lastAimAt = now
+	return true
 end
 
 function InputState:actionOf(keyName)
@@ -69,6 +100,9 @@ function InputState:press(keyName, now)
 	elseif action == "Primary" or action == "Secondary" then
 		-- Free 모드에서도 RMB는 항상 보조 공격이다(자유 시점 회전은 별도 FreeLook 버튼).
 		table.insert(cmds, { remote = "Attack", action = action })
+		if action == "Primary" then
+			self._lastPrimaryAt = now
+		end
 		if self.running then
 			-- 공격하면 달리기가 해제된다(서버도 동일 규칙으로 해제). 클라이언트는 즉시 낙관적으로 반영.
 			self.running = false
@@ -123,6 +157,7 @@ function InputState:releaseAll()
 	end
 	self.freeLookHeld = false
 	self.held = {}
+	self._lastPrimaryAt = nil
 	return cmds
 end
 

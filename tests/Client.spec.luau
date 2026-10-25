@@ -315,7 +315,7 @@ T.describe("회피: 방향·서버 확인 후 이동·공중 회피·충전", fu
 		local world = H.fakeWorld({})
 		local function targets() return { { id = "p1", pos = pos.p1, radius = 2.5, alive = core.damage:isAlive("p1") } } end
 		local ps = ProjectileService.new({ damage = core.damage, targets = targets, world = world })
-		local c = Controller.new({ core = core, projectiles = ps, targets = targets, world = world,
+		local c = Controller.new({ characters = H.legacyChars(Env.shared("Data/Characters")), core = core, projectiles = ps, targets = targets, world = world,
 			getPose = function() return { pos = pos.p1, forward = Vec.new(0, 0, 1), airborne = pos.p1.Y > 5 } end })
 		c:addPlayer("p1", "SWORD")
 		return c, core, pos
@@ -382,7 +382,7 @@ T.describe("HUD 모델과 궁극기 미구현 표시", function()
 		local world = H.fakeWorld({})
 		local function targets() return { { id = "p1", pos = pos.p1, radius = 2.5, alive = true } } end
 		local ps = ProjectileService.new({ damage = core.damage, targets = targets, world = world })
-		local c = Controller.new({ core = core, projectiles = ps, targets = targets, world = world,
+		local c = Controller.new({ characters = H.legacyChars(Env.shared("Data/Characters")), core = core, projectiles = ps, targets = targets, world = world,
 			getPose = function() return { pos = pos.p1, forward = Vec.new(0, 0, 1) } end })
 		c:addPlayer("p1", character)
 		return c, core
@@ -396,8 +396,8 @@ T.describe("HUD 모델과 궁극기 미구현 표시", function()
 		T.expect(not m.secondary.ready)
 		T.expect(m.healthFrac == 1)
 	end)
-	T.it("PAINTBALL: 탄약·재장전 진행, 보조 공격 없음", function()
-		local c = snap("PAINTBALL")
+	T.it("GUNNER(구현 모듈 없는 공통 경로): 탄약·재장전 진행, 보조 공격 없음", function()
+		local c = snap("GUNNER")
 		c:handleAttack("p1", { action = "Primary", aimDirection = Vec.new(0, 0, 1) }, 0)
 		c:handleReload("p1", 0.5)
 		local m = HudModel.build(c:getHudSnapshot("p1", 1), 1)
@@ -405,8 +405,8 @@ T.describe("HUD 모델과 궁극기 미구현 표시", function()
 		T.expect(m.ammo.reloading and m.ammo.reloadFrac > 0)
 		T.expect(m.secondary == nil)
 	end)
-	T.it("궁극기 미구현(PAINTBALL)이면 게이지가 가득이어도 ready=false이고 미구현 문구 표시", function()
-		local c, core = snap("PAINTBALL")
+	T.it("궁극기 미구현(GUNNER)이면 게이지가 가득이어도 ready=false이고 미구현 문구 표시", function()
+		local c, core = snap("GUNNER")
 		for _ = 1, 5 do core.ultimate:addKill("p1") end
 		local m = HudModel.build(c:getHudSnapshot("p1", 0), 0)
 		T.expectEqual(m.ultimate.frac, 1)
@@ -414,8 +414,8 @@ T.describe("HUD 모델과 궁극기 미구현 표시", function()
 		T.expect(m.ultimate.implemented == false)
 		T.expect(string.find(m.ultimate.label, "미구현") ~= nil)
 	end)
-	T.it("숫자 스킬 3칸은 미구현 캐릭터(PAINTBALL)에서 모두 미구현 표시", function()
-		local c = snap("PAINTBALL")
+	T.it("숫자 스킬 3칸은 미구현 캐릭터(GUNNER)에서 모두 미구현 표시", function()
+		local c = snap("GUNNER")
 		local m = HudModel.build(c:getHudSnapshot("p1", 0), 0)
 		for i = 1, 3 do T.expect(not m.skills[i].implemented and m.skills[i].label == "미구현") end
 	end)

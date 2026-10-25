@@ -130,6 +130,7 @@ local Config = {
 
 	Hud = {
 		StateSyncHz = 10, -- ASSUMPTION A43: 서버 → 클라이언트 상태 스냅샷 주기
+		AimSyncHz = 15, -- ASSUMPTION A70: 시전 중 조준 갱신(Aim 리모트) 전송 주기 — PAINTBALL Color Break 중에만 전송
 		ScoreboardSyncSeconds = 1, -- ASSUMPTION A43
 		RunReconcileTimeout = 1.0, -- ASSUMPTION A43: 달리기 토글 서버 확인 대기 상한(초)
 	},

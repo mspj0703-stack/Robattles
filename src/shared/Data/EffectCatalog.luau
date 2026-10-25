@@ -14,9 +14,12 @@ EffectCatalog.Sounds = {
 	paint_fire = { id = "rbxasset://sounds/button.wav", volume = 0.35 },
 	reload = { id = "rbxasset://sounds/switch.wav", volume = 0.6 },
 	dodge = { id = "rbxasset://sounds/snap.mp3", volume = 0.4 },
+	burst = { id = "rbxasset://sounds/button.wav", volume = 0.6 },
+	boom = { id = "rbxasset://sounds/swordlunge.wav", volume = 0.9 },
+	beam = { id = "rbxasset://sounds/switch.wav", volume = 0.7 },
 }
 
--- cue 이름 → 정의. style: Arc | Ring | Burst | Highlight | Afterimage | Muzzle | Projectile | Splat | Poof
+-- cue 이름 → 정의. style: Arc | Ring | Burst | Highlight | Afterimage | Muzzle | Projectile | Splat | Poof | Beam
 EffectCatalog.Cues = {
 	["sword.slash"] = { style = "Arc", color = { 235, 240, 255 }, size = 7, lifetime = 0.18, sound = "swing" },
 	["sword.slash3"] = { style = "Arc", color = { 255, 220, 140 }, size = 9, lifetime = 0.25, sound = "swing" },
@@ -39,6 +42,18 @@ EffectCatalog.Cues = {
 	["paint.fire"] = { style = "Muzzle", color = { 255, 140, 40 }, size = 1.2, lifetime = 0.08, sound = "paint_fire" },
 	["paint.projectile"] = { style = "Projectile", color = { 255, 140, 40 }, size = 0.6, lifetime = 2 },
 	["paint.splat"] = { style = "Splat", color = { 255, 140, 40 }, size = 2.2, lifetime = 1.5 },
+	-- PAINTBALL (Phase 2)
+	["paint.burst"] = { style = "Muzzle", color = { 255, 120, 30 }, size = 2.2, lifetime = 0.12, sound = "burst" },
+	["paint.bomb.throw"] = { style = "Muzzle", color = { 255, 90, 160 }, size = 1.6, lifetime = 0.12, sound = "paint_fire" },
+	["paint.bomb.projectile"] = { style = "Projectile", color = { 255, 90, 160 }, size = 1.0, lifetime = 3 },
+	["paint.explosion"] = { style = "Burst", color = { 255, 90, 160 }, size = 16, lifetime = 0.5, sound = "boom" },
+	["paint.pierce.fire"] = { style = "Muzzle", color = { 90, 200, 255 }, size = 2.0, lifetime = 0.12, sound = "burst" },
+	["paint.pierce.projectile"] = { style = "Projectile", color = { 90, 200, 255 }, size = 0.8, lifetime = 1.2 },
+	["paint.slide"] = { style = "Afterimage", color = { 255, 170, 60 }, size = 0, lifetime = 0.45, count = 5, sound = "dodge" },
+	["paint.ult.windup"] = { style = "Ring", color = { 255, 255, 255 }, size = 9, lifetime = 0.8, sound = "parry" },
+	["paint.ult.beam"] = { style = "Beam", color = { 255, 80, 200 }, size = 1.6, lifetime = 0.3, sound = "beam" },
+	["paint.ult.end"] = { style = "Ring", color = { 255, 80, 200 }, size = 6, lifetime = 0.3 },
+	["paint.reload.proc"] = { style = "Burst", color = { 120, 255, 140 }, size = 3, lifetime = 0.3, sound = "reload" },
 	["reload.start"] = { style = "Ring", color = { 200, 200, 200 }, size = 2, lifetime = 0.3, sound = "reload" },
 	["reload.done"] = { style = "Burst", color = { 120, 255, 140 }, size = 2, lifetime = 0.2, sound = "reload" },
 	["death.poof"] = { style = "Poof", color = { 200, 200, 200 }, size = 6, lifetime = 0.6 },

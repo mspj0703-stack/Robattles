@@ -123,3 +123,28 @@
 
 ## A67. 호출 규약: 승인 순서
 스킬은 모든 거부 사유(쿨타임·busy·행동 불가·이동 허가 거부)를 통과한 뒤에만 approveAction(부활 보호 해제)을 호출한다. 단 Lunge 는 충전 시작(Press)이 승인 시점이다(충전 취소 시에도 보호는 이미 해제됨). Blade Storm 은 게이지 소모 전에 busy 를 거부한다.
+
+## A68. 캐릭터별 최대 체력 구조 + PAINTBALL 확정/임시 수치 (Phase 2 PAINTBALL, CLI 검증 / Studio 미검증)
+**구조(확정 수치)**: 캐릭터 데이터의 `maxHealth` 가 최대 체력이다(SWORD 110 / PAINTBALL 95 / SUPERBALL 100 / TIMEBOMB 105 / SLINGSHOT 100). DamageService 는 `register(id, maxHealth)`·`setMaxHealth(id, max, refill)`·`getMaxHealth(id)` 를 제공하고, 컨트롤러는 addPlayer 때 등록하고 **부활 시(캐릭터 변경 반영 후)** 새 최대 체력으로 가득 채운다. 데이터에 없으면 Config.Combat.MaxHealth(100)를 쓴다. HUD 스냅샷의 `health.max`와 서버의 Humanoid 표시 체력도 같은 값을 쓴다. 기존 테스트는 "100 HP 기준 받은 피해" 단언을 유지하려고 `Helpers.hp(core,id)`(100 기준 환산)를 쓰며, 캐릭터별 HP 자체는 Paintball.spec "캐릭터별 최대 체력"이 따로 검증한다.
+**PAINTBALL 확정**: HP 95 · LMB Paint Shot 7 / 초당 3발 / 탄창 16 / 재장전 1.2초 / 서버 투사체 · RMB Paint Burst 독립 투사체 5개×5(같은 대상 다중 적중, 최대 25) / 탄 3 소모 / 후딜 약 1초 · Skill 1 Color Bomb 광역 24 / 쿨 9 · Skill 2 Piercing Shot 대상당 30 / 최대 3명 / 쿨 12 / 이중 적중 없음 · Skill 3 Paint Slide 12 스터드 / 쿨 7 / 무적 없음 / 슬라이드 중 LMB·RMB 가능 / Movement Permit · Ultimate Color Break 전조 0.8초 + 빔 약 2.5초 / 0.25초마다 6 / 대상당 최대 60 / 시전 중 조준 가능 · Passive Color Reload.
+**PAINTBALL 임시(Data/Characters.PAINTBALL 주석에도 표시)**: 투사체 속도(Shot 220 · Pellet 200 · Bomb 80 · Piercing 260), 사거리(Shot 300 · Pellet 70 · Bomb 120 · Piercing 150), 충돌 반지름, Color Bomb 폭발 반경 8(감쇠 없음, 직접 피해 없음, 시야 차단 적용, 시전자 피해 없음), Bomb 포물선(중력 40), Paint Burst 산탄 패턴(결정적: 중앙/좌/우 ±4°/위아래 ±3°), 공격 중 이동속도 배율(Shot 0.9 · Burst 0.8), Paint Slide 지속 0.4초(속도 30)·최소 이동 거리 1, 빔 길이 70·빔 반지름 1.2·패링 불가, 쿨타임 종료 기준(발사 시점부터).
+**공통 규칙**: 거부된 요청은 쿨타임·탄약·궁극기 게이지를 소모하지 않고 부활 보호를 해제하지 않는다. 승인은 모든 거부 사유를 통과한 뒤 모듈이 `approveAction` 을 한 번 호출한다(컨트롤러가 대신 호출하지 않음). 공통 사격 경로 보안·회귀 검사는 삭제하지 않고 테스트 전용 캐릭터 GUNNER(= Phase 1 의 옛 PAINTBALL 데이터, `Helpers.legacyChars`)로 계속 검증한다.
+
+## A69. Color Reload 세부 해석 (임시 해석, 사양 문구에 대한 보수적 해석)
+- 유효 적중 = DamageService 가 실제로 피해를 적용한 Paint Burst 펠릿 / Piercing Shot 관통 대상 / Color Bomb 폭발 대상(시전자 제외). 부활 보호·회피 무적·패링·사망 대상은 제외. LMB·Paint Slide·궁극기는 발동하지 않는다.
+- "재장전 중이면 재장전을 즉시 취소하고 탄약을 회복": 재장전을 취소(`reloadingUntil=0`)하고 **현재 탄 + 3**(탄창 한도)로 만든다. 탄창을 가득 채우지 않는다. 재장전은 시각 비교 방식이라 취소 후 옛 완료 시각에 탄이 덮어써지지 않는다(테스트).
+- 회복할 것이 없으면(탄창 가득 + 재장전 아님) 발동·5초 잠금 모두 일어나지 않는다(잠금 낭비 방지, 사양에 명시 없음 → 임시).
+- 한 번의 Paint Burst 에서 여러 펠릿이 맞아도 첫 유효 적중에서만 발동하고 이후는 5초 잠금.
+- 투사체는 발사한 생애(부활·캐릭터 변경·퇴장 시 증가)를 기억한다: 이전 생애 투사체의 적중은 패시브를 발동하지 않는다(투사체 자체는 수명 동안 유지·피해는 적용).
+
+## A70. Aim 리모트와 Color Break 해석
+- 새 클라→서버 리모트 `Aim`(aimOrigin·aimDirection·clientTime만): RemoteGate 검증(스키마·빈도·사망·시각·원점) 통과 후 컨트롤러가 최근 조준을 저장하고, 해당 캐릭터 모듈이 지속 시전 중일 때만 반영(그 외는 거부 `no_aim_use`). 클라이언트는 빔 시전 중에만 Config.Hud.AimSyncHz(15Hz, 임시)로 전송.
+- 빔 판정은 전부 서버: 틱 시각 = 시작 + 0.8 + k×0.25 (k=1..10), 서버 시각에 맞춰 처리(큰 dt 에도 10틱 고정). 눈 높이에서 현재 조준 방향으로 길이 70의 선분, 벽(월드 cast)에서 끊고, 대상 구(반지름 + 빔 반지름 1.2)와의 교차로 판정. 대상별 누적 피해 60 상한. 같은 틱의 중복 적용 없음.
+- 시전 중 사망 시 이후 틱 없음(UltimateService 사망 처리 + 모듈 reset). 기절 등 행동 불가는 빔을 끊지 않는다(임시). 자발적 취소 불가(기존 규칙). 시전 중 이동속도 변화 없음(사양 없음 → 임시).
+- 서버는 클라이언트의 조준 회전 속도를 제한하지 않는다(임시, Studio 감각 확인 후 필요하면 추가).
+
+## A71. Paint Slide · Paint Burst · 자동 연사 해석
+- Paint Slide 방향 = 조준 방향의 수평 성분(이동 입력 방향이 아님). 서버가 벽 cast 로 거리를 줄이고(Config.MoveCheck.WallSkin), 남은 거리가 1 미만이면 `blocked` 로 거부(쿨타임 불변). 이동 허가(PaintSlide: 상한 속도 45·지속 1.5초·재발급 1초)를 서버가 발급하지 못하면 `movement_denied:*` 로 거부. 판정/피해 필드가 없는 `kind="Movement"` 라 부활 보호를 해제하지 않는다(ActionPolicy). 클라이언트는 서버 이벤트(CharSkill + dash{speed,duration,permit})만 따르고 해당 허가 종류의 상한으로 속도를 제한(MovementModel.dashVelocity permitKind).
+- 자동 연사(LMB 홀드)는 클라이언트가 fireInterval 마다 Attack 을 반복 요청할 뿐이고, 간격·탄약은 서버가 매 요청 검증한다.
+- Paint Burst 는 탄이 3 미만이면 거부(자동 재장전 시작 안 함), 재장전 중 거부, 투사체 상한이면 통째로 거부.
+- 연출 이벤트는 공통 `CharSkill{cue,...}` 형식(서버가 큐 이름 지정, 클라이언트는 카탈로그에 있는 큐만 재생). 이후 캐릭터도 같은 형식을 쓴다.

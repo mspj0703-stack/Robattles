@@ -35,8 +35,8 @@ function CombatCore.new(config)
 		end
 	end)
 
-	function core:addPlayer(id, characterId)
-		self.damage:register(id)
+	function core:addPlayer(id, characterId, maxHealth)
+		self.damage:register(id, maxHealth)
 		self.dodge:register(id)
 		self.ultimate:register(id, characterId)
 	end

@@ -17,6 +17,9 @@ end
 function Vec.dot(a, b)
 	return a.X * b.X + a.Y * b.Y + a.Z * b.Z
 end
+function Vec.cross(a, b)
+	return { X = a.Y * b.Z - a.Z * b.Y, Y = a.Z * b.X - a.X * b.Z, Z = a.X * b.Y - a.Y * b.X }
+end
 function Vec.len(a)
 	return math.sqrt(a.X * a.X + a.Y * a.Y + a.Z * a.Z)
 end

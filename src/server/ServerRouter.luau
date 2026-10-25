@@ -18,6 +18,8 @@ function ServerRouter:dispatch(playerId, remoteName, payload, now)
 		return c:handleAttack(playerId, payload, now)
 	elseif remoteName == "Skill" then
 		return c:handleSkill(playerId, payload, now)
+	elseif remoteName == "Aim" then
+		return c:handleAim(playerId, payload, now)
 	elseif remoteName == "Reload" then
 		return c:handleReload(playerId, now)
 	elseif remoteName == "Dodge" then

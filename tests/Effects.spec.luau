@@ -96,7 +96,7 @@ T.describe("EffectsModel: 재장전 에지·시각 탄·잔상", function()
 end)
 
 T.describe("EffectCatalog: 교체 가능한 구조 검증", function()
-	local STYLES = { Arc = true, Ring = true, Burst = true, Highlight = true, Afterimage = true, Muzzle = true, Projectile = true, Splat = true, Poof = true }
+	local STYLES = { Arc = true, Ring = true, Burst = true, Highlight = true, Afterimage = true, Muzzle = true, Projectile = true, Splat = true, Poof = true, Beam = true }
 	T.it("모든 큐 정의가 유효한 style·color·lifetime 을 가진다", function()
 		for name, def in Catalog.Cues do
 			T.expect(STYLES[def.style], name .. " style")

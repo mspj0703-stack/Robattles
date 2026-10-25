@@ -48,6 +48,8 @@ function HudModel.build(snap, now)
 				label = string.format("%s 충전 %d%%", s.name or "", math.floor((s.chargeFrac or 0) * 100))
 			elseif s.state == "dashing" then
 				label = (s.name or "") .. " 돌진"
+			elseif s.state == "sliding" then
+				label = (s.name or "") .. " 이동 중"
 			elseif rem > 0 then
 				label = string.format("%s %.1fs", s.name or "", rem)
 			else
@@ -83,7 +85,8 @@ function HudModel.build(snap, now)
 			ready = u.gauge >= u.max and u.implemented == true and not u.active,
 			active = u.active,
 			implemented = u.implemented == true,
-			label = (u.implemented == true) and (u.active and ((u.name or "궁극기") .. " 발동 중") or (u.gauge >= u.max and ((u.name or "궁극기") .. " F 발동 가능") or "충전 중")) or "궁극기 미구현",
+			windup = u.windupUntil ~= nil and u.windupUntil > now,
+			label = (u.implemented == true) and (u.active and ((u.name or "궁극기") .. ((u.windupUntil ~= nil and u.windupUntil > now) and " 전조" or " 발동 중")) or (u.gauge >= u.max and ((u.name or "궁극기") .. " F 발동 가능") or "충전 중")) or "궁극기 미구현",
 		}
 	end
 

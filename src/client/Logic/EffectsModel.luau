@@ -1,7 +1,16 @@
 --!nonstrict
 -- 서버 Feedback/State → 연출 큐(cue) 변환 (순수 로직, CLI 테스트 가능). 렌더링은 EffectPlayer(Roblox 전용)가 한다.
 -- cue 이름은 shared/Data/EffectCatalog.Cues 의 키다. 알 수 없는 이벤트는 무시하고 예외를 던지지 않는다.
+local Link = require(script.Parent.Parent.Link)
+local Catalog = Link.shared("Data/EffectCatalog")
+
 local EffectsModel = {}
+
+-- 서버가 보내는 투사체 정의 id → (발사 연출, 시각용 탄) 큐 이름. 알 수 없는 정의는 기본 페인트탄으로 그린다.
+local PROJECTILE_CUES = {
+	color_bomb = { fire = "paint.bomb.throw", proj = "paint.bomb.projectile" },
+	piercing_shot = { fire = "paint.pierce.fire", proj = "paint.pierce.projectile" },
+}
 
 -- 반환: { { cue, playerId?, targetId?, pos?, dir?, mine?, ... } }
 function EffectsModel.translate(event, myId)
@@ -57,13 +66,29 @@ function EffectsModel.translate(event, myId)
 			cue = "dodge.afterimage", playerId = event.playerId, mine = event.playerId == myId,
 			dir = dir, distance = event.info and event.info.distance, origin = event.info and event.info.origin,
 		})
-	elseif t == "Spawned" then
-		-- 페인트볼 등 직선 투사체: 발사 연출 + 클라이언트 측 시각용 탄. (판정은 서버가 한다)
-		if event.projectileType == "Linear" and type(event.pos) == "table" and type(event.dir) == "table" then
-			table.insert(out, { cue = "paint.fire", playerId = event.ownerId, mine = event.ownerId == myId, pos = event.pos, dir = event.dir })
+	elseif t == "CharSkill" then
+		-- 캐릭터 모듈이 보낸 일반 스킬 이벤트: 서버가 지정한 큐 이름이 카탈로그에 있을 때만 재생(그 외는 무시)
+		if type(event.cue) == "string" and Catalog.Cues[event.cue] ~= nil then
+			local dash = event.dash
 			table.insert(out, {
-				cue = "paint.projectile", projectileId = event.projectileId, playerId = event.ownerId, pos = event.pos, dir = event.dir,
-				speed = event.speed, radius = event.radius, lifetime = event.lifetime, startTime = event.time,
+				cue = event.cue, playerId = event.playerId, targetId = event.targetId, mine = event.playerId == myId,
+				pos = event.pos, dir = event.dir or event.direction, origin = event.origin, tip = event.tip,
+				distance = type(dash) == "table" and (dash.speed or 0) * (dash.duration or 0) or event.distance, radius = event.radius,
+			})
+		end
+	elseif t == "Explosion" then
+		if type(event.pos) == "table" then
+			table.insert(out, { cue = "paint.explosion", pos = event.pos, radius = event.radius, playerId = event.ownerId, mine = event.ownerId == myId })
+		end
+	elseif t == "Spawned" then
+		-- 직선/포물선/관통 투사체: 발사 연출 + 클라이언트 측 시각용 탄. (판정은 서버가 한다)
+		local visible = event.projectileType == "Linear" or event.projectileType == "Arc" or event.projectileType == "Pierce"
+		if visible and type(event.pos) == "table" and type(event.dir) == "table" then
+			local special = PROJECTILE_CUES[event.defId]
+			table.insert(out, { cue = special and special.fire or "paint.fire", playerId = event.ownerId, mine = event.ownerId == myId, pos = event.pos, dir = event.dir })
+			table.insert(out, {
+				cue = special and special.proj or "paint.projectile", projectileId = event.projectileId, playerId = event.ownerId, pos = event.pos, dir = event.dir,
+				speed = event.speed, radius = event.radius, lifetime = event.lifetime, startTime = event.time, gravity = event.gravity,
 			})
 		end
 	elseif t == "Ended" then
@@ -98,9 +123,10 @@ function EffectsModel.projectilePosition(cue, now)
 	if elapsed < 0 or elapsed > (cue.lifetime or 2) then
 		return nil
 	end
+	local g = type(cue.gravity) == "number" and cue.gravity or 0 -- 포물선(Color Bomb 등): 서버와 같은 중력식
 	return {
 		X = cue.pos.X + cue.dir.X * cue.speed * elapsed,
-		Y = cue.pos.Y + cue.dir.Y * cue.speed * elapsed,
+		Y = cue.pos.Y + cue.dir.Y * cue.speed * elapsed - 0.5 * g * elapsed * elapsed,
 		Z = cue.pos.Z + cue.dir.Z * cue.speed * elapsed,
 	}
 end
