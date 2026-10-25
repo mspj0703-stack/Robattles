@@ -190,7 +190,7 @@ T.describe("SUPERBALL LMB — Super Throw (일반 18 / 충전 28)", function()
 		T.expect(not ok and why == "charge_expired")
 		T.expectEqual(nBalls(c, "a"), 0)
 		T.expect(core.cooldown:isReady("a", "primary", 5))
-		T.expect(c:isProtected("a", 0.2) == false or true) -- 보호는 2초 뒤 만료되므로 시간 경과로 판정하지 않는다
+		T.expect(c._p.a.protectedUntil > 0) -- 취소된 충전은 보호를 해제하지 않는다
 	end)
 	T.it("Release 가 오지 않으면 서버가 충전을 정리하고(느려짐 해제) 다시 Press 할 수 있다", function()
 		local c = setup({ a = "SUPERBALL" })
@@ -621,15 +621,15 @@ T.describe("SUPERBALL Passive — Trick Master (튕김 뒤 적중 시 쿨타임 
 		local c, core = setup({ a = "SUPERBALL" })
 		core.cooldown:start("a", "skill1", 9, 0)
 		hit(c, ball(c), 8.8)
-		T.expect(math.abs(core.cooldown:readyAt("a", "skill1") - 9) < 1e-9 or core.cooldown:readyAt("a", "skill1") >= 8.8)
-		T.expect(core.cooldown:remaining("a", "skill1", 8.8) >= 0)
+		T.expect(math.abs(core.cooldown:readyAt("a", "skill1") - 8.8) < 1e-9) -- 남은 0.2초만 감소
+		T.expect(core.cooldown:remaining("a", "skill1", 8.8) == 0)
 	end)
 	T.it("줄일 스킬이 없으면 발동도 잠금도 일어나지 않는다", function()
 		local c, core = setup({ a = "SUPERBALL" })
 		hit(c, ball(c), 1)
 		core.cooldown:start("a", "skill2", 12, 1.1)
 		hit(c, ball(c), 1.2)
-		T.expect(math.abs(core.cooldown:readyAt("a", "skill2") - 13.1 + 0.5) < 1e-9)
+		T.expect(math.abs(core.cooldown:readyAt("a", "skill2") - 12.6) < 1e-9) -- 첫 헛발은 잠금을 만들지 않아 두 번째가 발동
 	end)
 	T.it("무효 조건: 튕기지 않은 볼·피해 미적용·자기 자신·이전 생애·사망·캐릭터 변경", function()
 		local c, core = setup({ a = "SUPERBALL", b = "SUPERBALL", k = "SWORD" })
@@ -650,8 +650,6 @@ T.describe("SUPERBALL Passive — Trick Master (튕김 뒤 적중 시 쿨타임 
 		core.cooldown:start("a", "skill2", 100, 0)
 		c:handleAttack("a", prim(), 0)
 		run(c, 0, 4)
-		local trick = 0
-		for _, e in core.cooldown._ready.a and {} or {} do trick += 1 end
 		T.expect(core.cooldown:readyAt("a", "skill2") < 100)
 	end)
 	T.it("튕기지 않고 맞힌 첫 적중은 쿨타임을 줄이지 않는다", function()
