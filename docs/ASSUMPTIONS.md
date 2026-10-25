@@ -199,4 +199,4 @@
 
 ## A81. 통합 안정화 기준·미결 사항
 - 12인 부하 테스트의 상한(초당 이벤트 400 미만, 투사체 총 상한 `Projectile.MaxActiveTotal`, 소유자당 폭탄 24·볼 12)은 **임시 합격선**이다. 실측(Studio) 전에는 성능 합격으로 보지 않는다.
-- **미결(사용자 확인 필요): SWORD Blade Storm "5×8+25"** — 코드는 8틱 × 5 피해 + 마무리 25 = 65(`ticks=8, tickDamage=5`). "5×8"이 "5피해 × 8틱"인지 "5틱 × 8피해"인지 확정 기획 문구만으로는 판별할 수 없다(총합은 둘 다 65). 확정 기획을 임의로 바꾸지 않기 위해 코드는 그대로 두었다. 기획이 5틱 × 8이면 `Characters.SWORD.ultimate` 의 `ticks/tickDamage/tickInterval/finisherAt` 값과 Sword.spec 의 틱 수 기대값(8→5)만 바꾸면 된다.
+- **확정(사용자 확인 2026-10-25): SWORD Blade Storm = 8틱 × 5 피해 + 마무리 25 (총 65)**. 코드(`ticks=8, tickDamage=5, finisherDamage=25`)와 Sword.spec(틱 8회·합계 65)이 이미 일치해 수정 없음. 이전 표기 "5×8+25" 는 같은 의미의 표기 차이로 정리한다.
