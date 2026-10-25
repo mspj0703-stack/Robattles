@@ -4,6 +4,13 @@
 
 > ⚠️ **검증 상태**: 이 작업을 한 환경에는 Luau 실행기와 Roblox Studio 가 없었다. 신규 테스트(`tests/SwordAnim.spec.luau`)는 **작성만 했고 실행하지 못했다**. 기존 전투/맵/UI/MatchFlow 회귀도 실행하지 못했다. Python 기반 `check_projects` / `check_remotes` 만 실행해 통과를 확인했다. 아래 "미검증" 항목을 참고.
 
+## 리뷰 수정 (GPT 검수 반영)
+
+- **P0 Motor6D 적용 시점**: `BindToRenderStep(Last)` → `RunService.PreSimulation`. Roblox 문서(Task scheduler)가 "Motor6D.Transform 변경은 PreSimulation 에서 해야 하며 늦은 단계에서 쓴 값은 Animator 가 덮어쓴다"고 밝힌다. 카메라·입력용 기존 RenderStepped 로직은 변경하지 않았다. 문서의 프레임 순서 도표는 텍스트로 확인하지 못했으므로 실제 덮어쓰기 여부는 Studio 에서 확인한다.
+- **P1 관절 준비/중복/정리**: `CharacterId` 가 관절보다 먼저 복제되면 `pending` 으로 두고 `DescendantAdded`(프레임당 1회로 묶음)로 자동 재시도, `MAX_WAIT`(10s) 뒤 포기·경고. R15 는 `unsupported` 로 재시도 없이 1회 경고. 캐릭터·플레이어별 감시를 `_watched`/`_bound` 로 한 번만 연결하고, 캐릭터 제거·`PlayerRemoving`·`destroy()` 시 해당 연결을 모두 해제(이전에는 전역 목록에 쌓여 누수됐다).
+- **P2 에셋 관리**: 에셋 구동 판정이 매 프레임 `Animation` 인스턴스를 만들던 문제를 `AnimationCache` 로 해결(모션당 1회 해석, 없음도 캐시, Animation 추가/삭제 시 무효화·소유 인스턴스 Destroy). `LoadAnimation` 결과도 리그별로 캐시해 재생마다 로드하지 않는다. 절차→에셋 전환·사망 시 Transform 을 한 번 원복해 잔여물을 막는다. 에셋→절차 복귀는 6관절을 매 프레임 덮어쓰므로 잔여물이 남지 않는다.
+- **R6 설정 확인 결과**: 이 저장소에는 R6 를 강제하는 설정이 **없다**(`Main.server` 는 `LoadCharacterAsync` 만 사용, `*.project.json` 의 StarterPlayer 에 AvatarType 설정 없음). Studio 의 `StarterPlayer.GameAvatarType` 이 `UserChoice`/R15 이면 SWORD 애니메이션은 R15 캐릭터에서 **켜지지 않는다**(경고 1회 후 기존 동작). R6 로 쓰려면 Studio 에서 `GameAvatarType = R6` 로 설정하거나 별도 결정으로 프로젝트 파일에 추가해야 한다(`*.project.json` 은 이번 범위 밖이라 수정하지 않았다).
+
 ## 구조
 
 | 파일 | 종류 | 역할 |
@@ -13,7 +20,10 @@
 | `src/client/Logic/MotionMath.luau` | 신규 | 포즈 보간·레이어·키프레임 샘플링(순수) |
 | `src/client/Logic/LocomotionPose.luau` | 신규 | Idle / Run 절차 포즈(순수) |
 | `src/client/Logic/SwordAnimState.luau` | 신규 | 상태기계: 이벤트→모션, 우선순위, 중단·복구, 사망/리스폰 정리(순수) |
-| `src/client/SwordAnimator.luau` | 신규 | Roblox 적용 계층: R6 Motor6D.Transform 적용, 에셋 트랙 재생, 캐릭터 감시 |
+| `src/client/SwordAnimator.luau` | 신규 | Roblox 적용 계층: PreSimulation 에서 R6 Motor6D.Transform 적용, 에셋 트랙 재생, 캐릭터 감시 |
+| `src/client/Logic/RigStatus.luau` | 신규(리뷰 수정) | R6 리그 준비 판정 ready/pending/unsupported (순수) |
+| `src/client/Logic/AnimationCache.luau` | 신규(리뷰 수정) | 에셋 해석 결과 캐시 (순수) |
+| `tools/check_anim.py` | 신규(리뷰 수정) | Python 전용 정적 검사: 금지 영역 변경 없음, PreSimulation 사용, 캐시/중복방지/연결해제 소스 확인 |
 | `tests/SwordAnim.spec.luau` | 신규 | 위 순수 로직 + 실제 서버 이벤트 연동 테스트 |
 | `docs/SWORD_ANIMATION.md` | 신규 | 이 문서 |
 | `src/client/Main.client.luau` | **수정(+4/−1줄)** | `SwordAnimator` require/생성, Feedback 수신 첫 줄에 `pcall(onFeedback)`, 종료 시 destroy |
@@ -98,7 +108,7 @@ CLI: `SwordAnim.spec` 실행 · 기존 전체 전투/맵/UI/MatchFlow CLI 회귀
 
 Studio 체크리스트:
 - [ ] SWORD 선택 후 R6 캐릭터에서 Idle(검 든 자세) / Run 이 보이는가, 다른 4캐릭터는 기존 애니메이션 그대로인가
-- [ ] **Animate/Animator 출력 위에 Motor6D.Transform 이 덮이는가**(RenderPriority.Last 적용 시점이 맞는지). 안 맞으면 포즈가 깜빡이거나 기본 걷기와 섞임
+- [ ] **Animate/Animator 출력 위에 Motor6D.Transform 이 덮이는가**(PreSimulation 적용 — 공식 문서 근거는 아래 "리뷰 수정"). 안 맞으면 포즈가 깜빡이거나 기본 걷기와 섞임
 - [ ] 각 관절 축/부호가 의도대로인가(팔이 앞으로 들리는지, 좌우 비틂 방향, 몸통 숙임 방향). 틀리면 `SwordAnimator.transformFor` 와 데이터 부호 확인
 - [ ] Slash1→2→3 연속 입력, 달리며 베기(하체 유지), 마지막 후딜 후 Idle 복귀
 - [ ] Triple Slash 3회 입력, 서버 전진과 시각 기울기가 어긋나지 않는가
