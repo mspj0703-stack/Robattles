@@ -18,6 +18,7 @@ local FeedbackModel = require(script.Parent.Logic.FeedbackModel)
 local AimAssist = require(script.Parent.Logic.AimAssist)
 local EffectsModel = require(script.Parent.Logic.EffectsModel)
 local EffectPlayer = require(script.Parent.EffectPlayer)
+local SwordAnimator = require(script.Parent.SwordAnimator)
 local WeaponModels = require(script.Parent.WeaponModels)
 local CameraRig = require(script.Parent.CameraRig)
 local UIApp = require(script.Parent.UI.App)
@@ -35,6 +36,7 @@ local rig = CameraRig.new(input)
 local app = UIApp.new(settings, function(binds) input:setBinds(binds) end)
 local hud = app.hud
 local effects = EffectPlayer.new(function() return workspace:GetServerTimeNow() end)
+local swordAnim = SwordAnimator.new() -- SWORD R6 전투 애니메이션(시각 전용). 판정·이동·Remote 와 무관
 local board = app.board
 local aimView = AimView.new() -- SLINGSHOT RMB Aim Mode 궤적(표시 전용)
 local chargeStart -- 클라이언트가 충전 시작을 본 시각(표시용 추정. 실제 충전량은 서버가 정한다)
@@ -141,7 +143,7 @@ app:setCallbacks({
 		end
 	end,
 })
-script.Destroying:Connect(function() app:destroy(); effects:destroy() end)
+script.Destroying:Connect(function() app:destroy(); effects:destroy(); swordAnim:destroy() end)
 
 local function nameOf(inputObj)
 	if inputObj.KeyCode ~= Enum.KeyCode.Unknown then return inputObj.KeyCode.Name end
@@ -193,6 +195,7 @@ remotes:WaitForChild("Scoreboard").OnClientEvent:Connect(function(rows)
 end)
 local lastCorrection
 remotes:WaitForChild("Feedback").OnClientEvent:Connect(function(event)
+	pcall(function() swordAnim:onFeedback(event) end) -- 애니메이션 오류가 전투 처리를 막지 않도록 격리
 	app:onFeedback(event, now())
 	if event.type == "KillConfirmed" and event.attackerId == myId then
 		hud:showToast("KO!", now(), 1)
