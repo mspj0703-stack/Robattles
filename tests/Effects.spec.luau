@@ -120,11 +120,10 @@ T.describe("EffectCatalog: 교체 가능한 구조 검증", function()
 		end
 		T.expect(Catalog.Cues["reload.start"] ~= nil) -- 상태 에지로 재생되는 큐
 	end)
-	T.it("Phase 1 캐릭터(SWORD/PAINTBALL) 모두 임시 무기 규격이 있고 다른 캐릭터 규격은 없다", function()
-		for id in Characters do T.expect(Catalog.Weapons[id] ~= nil, id) end
-		local n = 0
-		for _ in Catalog.Weapons do n += 1 end
-		T.expectEqual(n, 2)
+	T.it("구현된 캐릭터 모두 임시 무기 규격이 있고 그 외(레거시 스텁) 규격은 없다", function()
+		local implemented = { SWORD = true, PAINTBALL = true, SUPERBALL = true }
+		for id in implemented do T.expect(Catalog.Weapons[id] ~= nil, id) end
+		for id in Catalog.Weapons do T.expect(implemented[id] == true, id) end
 	end)
 	T.it("사운드 정의: id 문자열과 0~1 음량(빈 id 는 재생 생략 허용)", function()
 		for name, s in Catalog.Sounds do

@@ -144,4 +144,53 @@ Characters.PAINTBALL = {
 	passive = { id = "ColorReload", ammoRestore = 3, lockSeconds = 5 }, -- 확정
 }
 
+-- SUPERBALL (Phase 2). 확정: HP 100, LMB 일반 18(지형 튕김 2회·수명 약 5초)/약 1초 충전 28(3회·약 6초), RMB Bounce Dash 10스터드·쿨 7·무적 없음,
+-- 스킬1 Rapid Bounce 3발×12·쿨 9, 스킬2 Scatter Ball 5발×7·쿨 12, 스킬3 Recall 귀환 볼당 12·쿨 8(볼당 대상당 1회, 유도 없음),
+-- 궁극기 Ball Cyclone 볼 10개 공전·최대 12초·접촉 8·LMB 발사 시 추가 12, 볼 총량 12(일반+궁극기),
+-- 패시브 Trick Master: 지형 튕김 뒤 적 유효 적중 시 가장 긴 스킬 쿨타임 0.5초 감소·1초 재발동 제한.
+-- 임시(A72~A75): 속도·중력·반경·반발계수·발사 간격·산탄 각도·공전 반지름/주기·접촉 간격·귀환 속도·충전 최대 유지 시간 등 위에 없는 모든 수치.
+Characters.SUPERBALL = {
+	id = "SUPERBALL",
+	displayName = "Superball",
+	maxHealth = 100, -- 확정
+	module = "Superball",
+	ballCap = 12, -- 확정: 일반 + 궁극기 볼 합산 상한
+	primary = {
+		kind = "Projectile", automatic = false, damage = 18, chargedDamage = 28, -- 확정
+		chargeSeconds = 1.0, maxHoldSeconds = 4, fireInterval = 0.6, -- 충전 약 1초 확정 / 나머지 임시
+		moveSpeedMult = 0.9, chargeMoveMult = 0.8, -- 임시
+		normal = { bounces = 2, lifetime = 5, speed = 75, gravity = 28, radius = 0.6, restitution = 0.8 }, -- 튕김·수명 확정, 나머지 임시
+		charged = { bounces = 3, lifetime = 6, speed = 100, gravity = 28, radius = 0.8, restitution = 0.8 },
+	},
+	-- RMB Bounce Dash: 이동기(무적 없음). 서버 이동 허가(BounceDash) 필수. 공중 사용 가능.
+	secondary = {
+		id = "BounceDash", name = "Bounce Dash", kind = "Movement",
+		cooldown = 7, distance = 10, -- 확정
+		duration = 0.25, minDistance = 1, permit = "BounceDash", -- 임시
+	},
+	skills = {
+		[1] = {
+			id = "RapidBounce", name = "Rapid Bounce", kind = "Skill", cooldown = 9, damage = 12, balls = 3, -- 확정
+			spread = { { 0, 0 }, { -5, 0 }, { 5, 0 } }, -- 임시
+			ball = { bounces = 2, lifetime = 5, speed = 75, gravity = 28, radius = 0.6, restitution = 0.8 },
+		},
+		[2] = {
+			id = "ScatterBall", name = "Scatter Ball", kind = "Skill", cooldown = 12, damage = 7, balls = 5, -- 확정
+			spread = { { 0, 0 }, { -9, 0 }, { 9, 0 }, { -18, 0 }, { 18, 0 } }, -- 임시
+			ball = { bounces = 2, lifetime = 5, speed = 70, gravity = 28, radius = 0.5, restitution = 0.8 },
+		},
+		[3] = {
+			id = "Recall", name = "Recall", kind = "Skill", cooldown = 8, damage = 12, -- 확정: 귀환 볼 1발당 12
+			returnSpeed = 70, -- 임시
+		},
+	},
+	ultimate = {
+		id = "BallCyclone", name = "Ball Cyclone", kind = "Ultimate",
+		balls = 10, duration = 12, contactDamage = 8, shotDamage = 12, -- 확정
+		orbitRadius = 4, orbitSeconds = 1.6, orbitHeight = 1.5, contactInterval = 0.6, targetInterval = 0.2, -- 임시
+		shot = { speed = 90, gravity = 10, radius = 0.6, bounces = 1, lifetime = 3, restitution = 0.8 }, shotInterval = 0.4, -- 임시
+	},
+	passive = { id = "TrickMaster", reduceSeconds = 0.5, lockSeconds = 1 }, -- 확정
+}
+
 return Characters

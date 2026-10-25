@@ -18,10 +18,12 @@ local Vec = Link.shared("Vec")
 local Hitbox = require(script.Parent.HitboxService)
 local SwordSkills = require(script.Parent.SwordSkills)
 local PaintballSkills = require(script.Parent.PaintballSkills)
+local SuperballSkills = require(script.Parent.SuperballSkills)
 
 -- 캐릭터 데이터의 `module` 이름 → 서버 로직 모듈(Phase 2). 모듈이 없는 캐릭터는 공통 경로(근접/직선 발사)로 처리한다.
 local IMPLS = {
 	Paintball = PaintballSkills,
+	Superball = SuperballSkills,
 }
 
 local CharacterController = {}

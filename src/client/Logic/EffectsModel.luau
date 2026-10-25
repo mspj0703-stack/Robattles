@@ -96,6 +96,20 @@ function EffectsModel.translate(event, myId)
 		if event.reason == "Hit" or event.reason == "World" or event.reason == "Blocked" or event.reason == "Detonated" then
 			table.insert(out, { cue = "paint.splat", projectileId = event.projectileId, pos = event.pos, reason = event.reason })
 		end
+	elseif t == "BallSpawn" then
+		-- SUPERBALL 볼: 서버가 위치·속도·모드를 알려 주고(튕김/모드 전환 때마다 재기준) 클라이언트는 그 사이를 보간만 한다.
+		if type(event.pos) == "table" and type(event.vel) == "table" and event.ballId ~= nil then
+			out[#out + 1] = EffectsModel.ballCue("ball.projectile", event, myId)
+		end
+	elseif t == "BallBounce" or t == "BallMode" then
+		if event.ballId ~= nil and type(event.pos) == "table" then
+			out[#out + 1] = EffectsModel.ballCue("ball.update", event, myId)
+			if t == "BallBounce" then
+				out[#out + 1] = { cue = "ball.bounce", pos = event.pos, projectileId = event.ballId }
+			end
+		end
+	elseif t == "BallEnd" then
+		out[#out + 1] = { cue = "projectile.end", projectileId = event.ballId, pos = event.pos, reason = event.reason }
 	elseif t == "Reloaded" then
 		table.insert(out, { cue = "reload.done", playerId = event.playerId, mine = event.playerId == myId })
 	elseif t == "Died" then
@@ -104,6 +118,55 @@ function EffectsModel.translate(event, myId)
 		table.insert(out, { cue = "respawn.flash", playerId = event.playerId, mine = event.playerId == myId })
 	end
 	return out
+end
+
+-- 볼 이벤트 → 큐(위치/속도 기준점). dir/speed 는 vel 에서 계산한다.
+function EffectsModel.ballCue(cueName, event, myId)
+	local vel = type(event.vel) == "table" and event.vel or { X = 0, Y = 0, Z = 0 }
+	local speed = math.sqrt(vel.X * vel.X + vel.Y * vel.Y + vel.Z * vel.Z)
+	local dir = speed > 1e-6 and { X = vel.X / speed, Y = vel.Y / speed, Z = vel.Z / speed } or { X = 0, Y = 0, Z = 1 }
+	return {
+		cue = cueName, ball = true, projectileId = event.ballId, playerId = event.ownerId, mine = event.ownerId == myId,
+		pos = event.pos, dir = dir, speed = event.mode == "Return" and (event.speed or speed) or speed, gravity = event.gravity or 0,
+		radius = event.radius, lifetime = event.lifetime, startTime = event.time, mode = event.mode, orbit = event.orbit,
+	}
+end
+
+-- 시각용 볼 위치(모드별). Fly: 서버와 같은 포물선 / Return: 소유자 쪽으로 직선 / Orbit: 소유자 주위 원운동. 소유자 위치를 모르면 마지막 기준점.
+function EffectsModel.ballPosition(cue, now, ownerPos)
+	if type(cue.startTime) ~= "number" or type(cue.pos) ~= "table" then
+		return nil
+	end
+	local elapsed = math.max(0, now - cue.startTime)
+	local mode = cue.mode or "Fly"
+	if mode == "Orbit" then
+		local o = cue.orbit
+		if type(o) ~= "table" or not ownerPos then
+			return cue.pos
+		end
+		local ang = o.phase + o.omega * (now - o.startAt)
+		return { X = ownerPos.X + math.cos(ang) * o.radius, Y = ownerPos.Y + o.height, Z = ownerPos.Z + math.sin(ang) * o.radius }
+	elseif mode == "Return" then
+		if not ownerPos then
+			return cue.pos
+		end
+		local to = { X = ownerPos.X - cue.pos.X, Y = ownerPos.Y + 1.5 - cue.pos.Y, Z = ownerPos.Z - cue.pos.Z }
+		local dist = math.sqrt(to.X * to.X + to.Y * to.Y + to.Z * to.Z)
+		if dist < 1e-6 then
+			return cue.pos
+		end
+		local k = math.min(dist, (cue.speed or 0) * elapsed) / dist
+		return { X = cue.pos.X + to.X * k, Y = cue.pos.Y + to.Y * k, Z = cue.pos.Z + to.Z * k }
+	end
+	if elapsed > (cue.lifetime or 6) then
+		return nil
+	end
+	local g = type(cue.gravity) == "number" and cue.gravity or 0
+	return {
+		X = cue.pos.X + cue.dir.X * (cue.speed or 0) * elapsed,
+		Y = cue.pos.Y + cue.dir.Y * (cue.speed or 0) * elapsed - 0.5 * g * elapsed * elapsed,
+		Z = cue.pos.Z + cue.dir.Z * (cue.speed or 0) * elapsed,
+	}
 end
 
 -- 재장전 시작 감지: 이전/현재 HUD 스냅샷의 reloadingUntil 로 상승 에지를 판단한다. 반환 true 이면 reload.start 를 재생.

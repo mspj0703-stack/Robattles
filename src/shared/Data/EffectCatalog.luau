@@ -17,6 +17,7 @@ EffectCatalog.Sounds = {
 	burst = { id = "rbxasset://sounds/button.wav", volume = 0.6 },
 	boom = { id = "rbxasset://sounds/swordlunge.wav", volume = 0.9 },
 	beam = { id = "rbxasset://sounds/switch.wav", volume = 0.7 },
+	bounce = { id = "rbxasset://sounds/clickfast.wav", volume = 0.5 },
 }
 
 -- cue 이름 → 정의. style: Arc | Ring | Burst | Highlight | Afterimage | Muzzle | Projectile | Splat | Poof | Beam
@@ -54,6 +55,20 @@ EffectCatalog.Cues = {
 	["paint.ult.beam"] = { style = "Beam", color = { 255, 80, 200 }, size = 1.6, lifetime = 0.3, sound = "beam" },
 	["paint.ult.end"] = { style = "Ring", color = { 255, 80, 200 }, size = 6, lifetime = 0.3 },
 	["paint.reload.proc"] = { style = "Burst", color = { 120, 255, 140 }, size = 3, lifetime = 0.3, sound = "reload" },
+	-- SUPERBALL (Phase 2)
+	["ball.projectile"] = { style = "Projectile", color = { 80, 220, 255 }, size = 0.7, lifetime = 12 },
+	["ball.bounce"] = { style = "Burst", color = { 160, 240, 255 }, size = 2, lifetime = 0.2, sound = "bounce" },
+	["ball.throw"] = { style = "Muzzle", color = { 80, 220, 255 }, size = 1.4, lifetime = 0.1, sound = "paint_fire" },
+	["ball.throw.charged"] = { style = "Muzzle", color = { 255, 240, 120 }, size = 2.4, lifetime = 0.14, sound = "burst" },
+	["ball.charge"] = { style = "Ring", color = { 255, 240, 120 }, size = 3, lifetime = 1.0, sound = "reload" },
+	["ball.dash"] = { style = "Afterimage", color = { 80, 220, 255 }, size = 0, lifetime = 0.4, count = 4, sound = "dodge" },
+	["ball.rapid"] = { style = "Muzzle", color = { 80, 220, 255 }, size = 2, lifetime = 0.12, sound = "burst" },
+	["ball.scatter"] = { style = "Burst", color = { 120, 200, 255 }, size = 4, lifetime = 0.2, sound = "burst" },
+	["ball.recall"] = { style = "Ring", color = { 120, 255, 200 }, size = 7, lifetime = 0.4, sound = "parry" },
+	["ball.trick"] = { style = "Burst", color = { 255, 215, 70 }, size = 4, lifetime = 0.3, sound = "parry_hit" },
+	["ball.cyclone.start"] = { style = "Ring", color = { 255, 255, 255 }, size = 10, lifetime = 0.5, sound = "parry" },
+	["ball.cyclone.shot"] = { style = "Muzzle", color = { 255, 120, 220 }, size = 1.6, lifetime = 0.1, sound = "burst" },
+	["ball.cyclone.end"] = { style = "Ring", color = { 255, 120, 220 }, size = 6, lifetime = 0.3 },
 	["reload.start"] = { style = "Ring", color = { 200, 200, 200 }, size = 2, lifetime = 0.3, sound = "reload" },
 	["reload.done"] = { style = "Burst", color = { 120, 255, 140 }, size = 2, lifetime = 0.2, sound = "reload" },
 	["death.poof"] = { style = "Poof", color = { 200, 200, 200 }, size = 6, lifetime = 0.6 },
@@ -63,6 +78,7 @@ EffectCatalog.Cues = {
 -- 임시 무기 모델 규격(WeaponModels 가 코드로 만든다). attach: 붙일 손 부품 후보(R15 → R6 순)
 EffectCatalog.Weapons = {
 	SWORD = { kind = "Sword", color = { 200, 205, 215 }, handleColor = { 90, 60, 40 }, length = 4.2, attach = { "RightHand", "Right Arm" } },
+	SUPERBALL = { kind = "Gun", color = { 40, 90, 140 }, accent = { 80, 220, 255 }, length = 1.8, attach = { "RightHand", "Right Arm" } },
 	PAINTBALL = { kind = "Gun", color = { 60, 60, 70 }, accent = { 255, 140, 40 }, length = 2.4, attach = { "RightHand", "Right Arm" } },
 }
 

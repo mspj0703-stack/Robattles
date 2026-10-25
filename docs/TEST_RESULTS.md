@@ -1,6 +1,6 @@
 # 자동 테스트 결과 (Luau CLI, 순수 로직)
 
-실행 시각: 2026-10-25 14:33
+실행 시각: 2026-10-25 14:49
 종료 코드: 0
 
 ```
@@ -539,6 +539,84 @@ PASS  PAINTBALL 클라이언트 순수 로직 > Color Bomb(Arc)·Piercing(Pierce
 PASS  PAINTBALL 클라이언트 순수 로직 > 서버가 보내는 모든 PAINTBALL 큐 이름이 카탈로그에 있다(실제 이벤트 수집)
 PASS  PAINTBALL 클라이언트 순수 로직 > Color Reload 발동 알림(내 것만 토스트), 탄약 부족 거부 안내
 PASS  PAINTBALL 클라이언트 순수 로직 > HUD: 스킬 3칸·슬라이드·궁극기 전조/발동·Color Reload 잠금 표시
+PASS  SUPERBALL 구조·확정 수치 > HP 100, 모듈 연결, 볼 총량 12
+PASS  SUPERBALL 구조·확정 수치 > LMB·RMB·스킬·궁극기·패시브 확정 수치
+PASS  SUPERBALL 구조·확정 수치 > SelectCharacter 스키마에 SUPERBALL 포함, Attack phase 는 Press/Release 만 허용
+PASS  SUPERBALL LMB — Super Throw (일반 18 / 충전 28) > 즉시 던지기(phase 생략): 일반 18, 튕김 2, 수명 5초
+PASS  SUPERBALL LMB — Super Throw (일반 18 / 충전 28) > Press → 1.0초 뒤 Release: 충전 28, 튕김 3, 수명 6초
+PASS  SUPERBALL LMB — Super Throw (일반 18 / 충전 28) > 0.5초만 쥐면 일반 던지기(18)로 나간다
+PASS  SUPERBALL LMB — Super Throw (일반 18 / 충전 28) > 서버가 충전 시간을 잰다: 클라이언트 clientTime 위조는 영향 없음
+PASS  SUPERBALL LMB — Super Throw (일반 18 / 충전 28) > 너무 오래 쥔 충전(4초 초과)은 취소: 볼 없음, 쿨타임·보호 불변
+PASS  SUPERBALL LMB — Super Throw (일반 18 / 충전 28) > Release 가 오지 않으면 서버가 충전을 정리하고(느려짐 해제) 다시 Press 할 수 있다
+PASS  SUPERBALL LMB — Super Throw (일반 18 / 충전 28) > Release 단독·중복 Release 는 볼을 만들지 않는다
+PASS  SUPERBALL LMB — Super Throw (일반 18 / 충전 28) > Press 중복은 already_charging, 쿨타임 중 Press 는 on_cooldown
+PASS  SUPERBALL LMB — Super Throw (일반 18 / 충전 28) > 발사 간격 0.6초: 연타는 거부되고 추가 볼이 생기지 않는다
+PASS  SUPERBALL LMB — Super Throw (일반 18 / 충전 28) > 충전 중 이동 속도 80%, 던지면 해제
+PASS  SUPERBALL LMB — Super Throw (일반 18 / 충전 28) > 충전 중 사망: 충전 취소 → 부활 후 Release 는 not_charging
+PASS  SUPERBALL LMB — Super Throw (일반 18 / 충전 28) > 부활 보호: Press·거부는 해제하지 않고, 실제로 던질 때 해제
+PASS  SUPERBALL LMB — Super Throw (일반 18 / 충전 28) > 사망한 플레이어의 던지기·Press 는 거부
+PASS  SUPERBALL 볼 비행·튕김·충돌 > 일반 볼은 지형에서 최대 2번 튕기고 세 번째 접촉에서 사라진다
+PASS  SUPERBALL 볼 비행·튕김·충돌 > 충전 볼은 최대 3번 튕긴다
+PASS  SUPERBALL 볼 비행·튕김·충돌 > 수명: 일반 5초, 충전 6초 뒤 소멸(빈 월드)
+PASS  SUPERBALL 볼 비행·튕김·충돌 > 벽 뒤의 적은 맞지 않는다(벽에서 튕겨 돌아온다)
+PASS  SUPERBALL 볼 비행·튕김·충돌 > 중력이 있는 실제 데이터: 바닥에서 튕긴다(공중 포물선 → 바닥 충돌)
+PASS  SUPERBALL 볼 비행·튕김·충돌 > 적 몸에 맞아 튕기는 것은 지형 튕김 횟수를 쓰지 않는다
+PASS  SUPERBALL 볼 비행·튕김·충돌 > 서로 다른 비행 단계에서는 같은 적을 다시 맞힐 수 있다(벽 반사 후 재적중)
+PASS  SUPERBALL 볼 비행·튕김·충돌 > BallService: 한 비행 단계에서 겹쳐 있는 동안 같은 대상은 한 번만 피해
+PASS  SUPERBALL 볼 비행·튕김·충돌 > 회피 무적·부활 보호 중인 대상은 맞지 않고 볼은 튕기지 않는다
+PASS  SUPERBALL 볼 비행·튕김·충돌 > 패링: 전방 패링 창에서 막히면 볼이 사라지고 피해 없음
+PASS  SUPERBALL 볼 비행·튕김·충돌 > 소유자는 자기 볼에 맞지 않는다(되돌아와도 피해 0)
+PASS  SUPERBALL 볼 비행·튕김·충돌 > 서버·클라이언트 볼 상태 일치: 모든 BallSpawn 은 BallEnd 와 짝을 이룬다
+PASS  SUPERBALL RMB — Bounce Dash (10스터드, 쿨 7, 무적 없음) > 이동 허가(BounceDash)를 발급하고 10스터드를 알린다, 쿨 7초
+PASS  SUPERBALL RMB — Bounce Dash (10스터드, 쿨 7, 무적 없음) > 공중에서도 사용할 수 있다
+PASS  SUPERBALL RMB — Bounce Dash (10스터드, 쿨 7, 무적 없음) > 무적 없음: 대시 중에도 피해를 받는다
+PASS  SUPERBALL RMB — Bounce Dash (10스터드, 쿨 7, 무적 없음) > 벽에 막히면 거리가 줄고, 너무 가까우면 거부(쿨타임 불변)
+PASS  SUPERBALL RMB — Bounce Dash (10스터드, 쿨 7, 무적 없음) > 서버가 이동 허가를 거부하면 쿨타임·보호를 쓰지 않는다
+PASS  SUPERBALL RMB — Bounce Dash (10스터드, 쿨 7, 무적 없음) > 판정 없는 이동기: 부활 보호를 해제하지 않는다
+PASS  SUPERBALL RMB — Bounce Dash (10스터드, 쿨 7, 무적 없음) > 대시 중에도 던지기가 가능하다(LMB 와 독립)
+PASS  SUPERBALL Skill 1 — Rapid Bounce (3발×12, 쿨 9) > 3발이 모두 맞으면 36, 쿨 9초
+PASS  SUPERBALL Skill 1 — Rapid Bounce (3발×12, 쿨 9) > 쿨타임 중 재사용은 거부되고 볼이 추가되지 않는다
+PASS  SUPERBALL Skill 1 — Rapid Bounce (3발×12, 쿨 9) > 부활 보호: 거부는 유지, 성공 시 해제
+PASS  SUPERBALL Skill 2 — Scatter Ball (5발×7, 쿨 12) > 근거리에서 5발 모두 맞으면 35
+PASS  SUPERBALL Skill 2 — Scatter Ball (5발×7, 쿨 12) > 원거리에서는 퍼져서 중앙 1발만 맞는다(7)
+PASS  SUPERBALL Skill 2 — Scatter Ball (5발×7, 쿨 12) > 쿨 12초
+PASS  SUPERBALL Skill 2 — Scatter Ball (5발×7, 쿨 12) > 볼 총량 12: 연속 사용해도 12를 넘지 않고 가장 오래된 일반 볼부터 교체된다
+PASS  SUPERBALL Skill 3 — Recall (귀환 볼당 12, 쿨 8) > 날아가는 일반 볼이 없으면 거부, 쿨타임 불변
+PASS  SUPERBALL Skill 3 — Recall (귀환 볼당 12, 쿨 8) > 귀환 경로의 적을 볼마다 1번씩 맞히고(합산 24), 볼은 소유자에게 회수된다
+PASS  SUPERBALL Skill 3 — Recall (귀환 볼당 12, 쿨 8) > 한 볼은 한 대상을 귀환 중 1번만 맞힌다(겹쳐 있는 여러 스텝에도 12)
+PASS  SUPERBALL Skill 3 — Recall (귀환 볼당 12, 쿨 8) > 유도 없음: 귀환 경로에서 벗어난 적은 맞지 않는다
+PASS  SUPERBALL Skill 3 — Recall (귀환 볼당 12, 쿨 8) > 귀환 경로가 지형에 막히면 볼이 소멸하고 뒤의 적은 맞지 않는다
+PASS  SUPERBALL Skill 3 — Recall (귀환 볼당 12, 쿨 8) > 쿨 8초, 재사용 거부
+PASS  SUPERBALL Skill 3 — Recall (귀환 볼당 12, 쿨 8) > 궁극기 볼은 귀환 대상이 아니다
+PASS  SUPERBALL Passive — Trick Master (튕김 뒤 적중 시 쿨타임 0.5초, 재발동 1초) > 유효 적중: 남은 쿨타임이 가장 긴 스킬 1개만 0.5초 감소
+PASS  SUPERBALL Passive — Trick Master (튕김 뒤 적중 시 쿨타임 0.5초, 재발동 1초) > 1초 재발동 제한: 1초 안의 두 번째 유효 적중은 감소 없음, 1초 뒤에는 다시 발동
+PASS  SUPERBALL Passive — Trick Master (튕김 뒤 적중 시 쿨타임 0.5초, 재발동 1초) > 최대 감소량: 남은 쿨타임이 0.5초보다 적으면 그만큼만, 0 아래로 내려가지 않는다
+PASS  SUPERBALL Passive — Trick Master (튕김 뒤 적중 시 쿨타임 0.5초, 재발동 1초) > 줄일 스킬이 없으면 발동도 잠금도 일어나지 않는다
+PASS  SUPERBALL Passive — Trick Master (튕김 뒤 적중 시 쿨타임 0.5초, 재발동 1초) > 무효 조건: 튕기지 않은 볼·피해 미적용·자기 자신·이전 생애·사망·캐릭터 변경
+PASS  SUPERBALL Passive — Trick Master (튕김 뒤 적중 시 쿨타임 0.5초, 재발동 1초) > 통합: 벽에서 튕긴 볼이 적을 맞히면 실제로 쿨타임이 줄어든다
+PASS  SUPERBALL Passive — Trick Master (튕김 뒤 적중 시 쿨타임 0.5초, 재발동 1초) > 튕기지 않고 맞힌 첫 적중은 쿨타임을 줄이지 않는다
+PASS  SUPERBALL Ultimate — Ball Cyclone (공전 10개, 12초, 접촉 8, LMB 발사 12) > 게이지가 부족하면 거부: 볼·게이지·보호 불변
+PASS  SUPERBALL Ultimate — Ball Cyclone (공전 10개, 12초, 접촉 8, LMB 발사 12) > 발동: 공전 볼 10개, 총량 12 유지를 위해 가장 오래된 일반 볼부터 제거
+PASS  SUPERBALL Ultimate — Ball Cyclone (공전 10개, 12초, 접촉 8, LMB 발사 12) > 궁극기 중 일반 볼을 만들어도 궁극기 볼은 밀려나지 않는다(일반은 최대 2개)
+PASS  SUPERBALL Ultimate — Ball Cyclone (공전 10개, 12초, 접촉 8, LMB 발사 12) > 접촉 피해 8: 공전 경로 위의 적은 간격을 두고 8씩 맞는다(소유자는 면역)
+PASS  SUPERBALL Ultimate — Ball Cyclone (공전 10개, 12초, 접촉 8, LMB 발사 12) > LMB: 공전 볼 1개를 발사해 12 피해, 공전 9개가 남고 발사 간격이 있다
+PASS  SUPERBALL Ultimate — Ball Cyclone (공전 10개, 12초, 접촉 8, LMB 발사 12) > 12초 뒤 종료: 모든 궁극기 볼(발사된 것 포함)이 사라지고 일반 볼은 유지
+PASS  SUPERBALL Ultimate — Ball Cyclone (공전 10개, 12초, 접촉 8, LMB 발사 12) > 사망하면 즉시 종료·정리, 사망 중 LMB 거부
+PASS  SUPERBALL Ultimate — Ball Cyclone (공전 10개, 12초, 접촉 8, LMB 발사 12) > 궁극기 중복 발동 거부(게이지 추가 소모 없음)
+PASS  SUPERBALL Ultimate — Ball Cyclone (공전 10개, 12초, 접촉 8, LMB 발사 12) > 충전 중 궁극기: 충전은 취소되고 이후 Release 는 not_charging
+PASS  SUPERBALL Ultimate — Ball Cyclone (공전 10개, 12초, 접촉 8, LMB 발사 12) > 어떤 시점에도 볼 총량은 12를 넘지 않는다(스팸 입력)
+PASS  SUPERBALL 보안·상태 정리 > 라우터 경유: Press/Release 정상, 위조 phase 는 스키마 거부
+PASS  SUPERBALL 보안·상태 정리 > 캐릭터 변경 후 리스폰: 이전 볼·충전·궁극기 모두 정리
+PASS  SUPERBALL 보안·상태 정리 > 퇴장 시 모든 볼 정리
+PASS  SUPERBALL 보안·상태 정리 > 사망해도 이미 던진 볼은 남지 않는다(사망 시 정리, 서버·클라이언트 일치)
+PASS  SUPERBALL 보안·상태 정리 > 동시 사용: 두 SUPERBALL 의 볼은 소유자별로 독립(각자 총량 12, 피해 귀속 정확)
+PASS  SUPERBALL 보안·상태 정리 > 기존 캐릭터 회귀: SWORD·PAINTBALL 의 최대 체력과 동작은 그대로
+PASS  SUPERBALL 보안·상태 정리 > 서버 전체가 보내는 모든 SUPERBALL 큐 이름이 카탈로그에 있다(실제 이벤트 수집)
+PASS  SUPERBALL 클라이언트 순수 로직 > InputState: 충전 주무기는 LMB 누름=Press, 뗌=Release, 포커스 상실 시에도 Release
+PASS  SUPERBALL 클라이언트 순수 로직 > EffectsModel: BallSpawn → 볼 큐(속도/방향), Bounce/Mode → 갱신 큐, End → 제거
+PASS  SUPERBALL 클라이언트 순수 로직 > EffectsModel.ballPosition: 포물선·귀환·공전
+PASS  SUPERBALL 클라이언트 순수 로직 > HUD: 스킬 3칸·보조(대시) 쿨·볼 수·충전 비율·최대 체력 100
+PASS  SUPERBALL 클라이언트 순수 로직 > 무기·조준선 카탈로그 등록
 PASS  EffectsModel: 이벤트 → 연출 큐 > Swing → sword.slash (내 것 mine=true)
 PASS  EffectsModel: 이벤트 → 연출 큐 > 패링 시작/성공/반격 표시
 PASS  EffectsModel: 이벤트 → 연출 큐 > Damaged → 피격 번쩍임 + 충격 연출, 공격자 관점 mine 구분
@@ -552,7 +630,7 @@ PASS  EffectsModel: 재장전 에지·시각 탄·잔상 > 시각 탄 위치: �
 PASS  EffectsModel: 재장전 에지·시각 탄·잔상 > 잔상 위치: 시작점부터 거리까지 균등, 거리 0이면 모두 시작점, 잘못된 입력은 빈 목록
 PASS  EffectCatalog: 교체 가능한 구조 검증 > 모든 큐 정의가 유효한 style·color·lifetime 을 가진다
 PASS  EffectCatalog: 교체 가능한 구조 검증 > EffectsModel 이 내보내는 모든 cue 이름이 카탈로그에 있다(projectile.end 제외)
-PASS  EffectCatalog: 교체 가능한 구조 검증 > Phase 1 캐릭터(SWORD/PAINTBALL) 모두 임시 무기 규격이 있고 다른 캐릭터 규격은 없다
+PASS  EffectCatalog: 교체 가능한 구조 검증 > 구현된 캐릭터 모두 임시 무기 규격이 있고 그 외(레거시 스텁) 규격은 없다
 PASS  EffectCatalog: 교체 가능한 구조 검증 > 사운드 정의: id 문자열과 0~1 음량(빈 id 는 재생 생략 허용)
 PASS  SpawnDirector > 적이 없으면 어떤 활성 스폰이든 반환하고 HRP 높이를 더한다
 PASS  SpawnDirector > 비활성(Enabled=false) 스폰은 선택하지 않는다
@@ -591,5 +669,5 @@ PASS  통합: 서버/클라이언트 동기화 > Correct 이벤트 수용: 최�
 PASS  통합: 서버/클라이언트 동기화 > dodgeVelocity: 서버가 줄인 거리 반영, 0이면 이동 없음, 기본 거리 초과 값은 제한
 PASS  통합: 서버/클라이언트 동기화 > 서버 보정 → 같은 위치 재관찰은 ok: 보정이 반복 루프를 만들지 않는다
 
-합계: 586 통과 / 0 실패 / 586 전체
+합계: 664 통과 / 0 실패 / 664 전체
 ```

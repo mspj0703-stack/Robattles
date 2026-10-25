@@ -6,6 +6,7 @@ local registry = {
 	DEFAULT = { style = "Dot", size = 6, spread = 0 },
 	SWORD = { style = "Ring", size = 18, spread = 0 }, -- 임시 디자인 (미확정)
 	PAINTBALL = { style = "Cross", size = 14, spread = 4 }, -- 임시 디자인 (미확정)
+	SUPERBALL = { style = "Ring", size = 16, spread = 6 }, -- 임시 디자인 (미확정)
 }
 
 function Crosshairs.register(characterId, def)

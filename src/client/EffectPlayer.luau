@@ -121,6 +121,17 @@ function EffectPlayer:_play(cue)
 		end
 		return
 	end
+	if name == "ball.update" then -- 튕김/모드 전환: 서버가 준 새 기준점으로 교체(이미 사라진 볼이면 무시)
+		local p = self._projectiles[cue.projectileId]
+		if p then
+			for k, v in cue do
+				if k ~= "cue" and v ~= nil then
+					p.cue[k] = v
+				end
+			end
+		end
+		return
+	end
 	local def = Catalog.Cues[name]
 	if not def then
 		return
@@ -235,7 +246,13 @@ end
 function EffectPlayer:_step()
 	local t = self._now()
 	for id, p in self._projectiles do
-		local pos = EffectsModel.projectilePosition(p.cue, t)
+		local pos
+		if p.cue.ball then
+			local root = p.cue.playerId and rootOf(p.cue.playerId)
+			pos = EffectsModel.ballPosition(p.cue, t, root and { X = root.Position.X, Y = root.Position.Y, Z = root.Position.Z } or nil)
+		else
+			pos = EffectsModel.projectilePosition(p.cue, t)
+		end
 		if not pos or not p.part.Parent then
 			p.part:Destroy()
 			self._projectiles[id] = nil

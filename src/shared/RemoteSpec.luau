@@ -13,6 +13,8 @@ RemoteSpec.Remotes = {
 	-- 공격 의사만 전달한다. 피해·명중·쿨타임은 서버가 결정한다.
 	Attack = Schema.object({
 		action = Schema.oneOf({ "Primary", "Secondary" }),
+		-- phase: 생략 = 즉시 발사. 충전형 주무기(SUPERBALL Super Throw)만 "Press"(충전 시작)/"Release"(던지기)를 보낸다.
+		phase = Schema.optional(Schema.oneOf({ "Press", "Release" })),
 		aimOrigin = Schema.vector3(),
 		aimDirection = unitDir,
 		clientTime = Schema.number({ min = 0 }),
@@ -42,7 +44,7 @@ RemoteSpec.Remotes = {
 	}),
 	-- 캐릭터 선택: 다음 리스폰부터 적용(확정 규칙). 현재는 Phase 1 테스트 캐릭터만 허용.
 	SelectCharacter = Schema.object({
-		characterId = Schema.oneOf({ "SWORD", "PAINTBALL" }), -- 구현 단계마다 추가(SUPERBALL·TIMEBOMB·SLINGSHOT)
+		characterId = Schema.oneOf({ "SWORD", "PAINTBALL", "SUPERBALL" }), -- 구현 단계마다 추가(TIMEBOMB·SLINGSHOT)
 	}),
 	SetRun = Schema.object({
 		enabled = Schema.boolean(),

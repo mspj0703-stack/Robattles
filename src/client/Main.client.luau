@@ -88,6 +88,7 @@ local function send(cmd)
 			local payload = { aimOrigin = origin, aimDirection = dir, clientTime = now() }
 			if cmd.remote == "Attack" then
 				payload.action = cmd.action
+				payload.phase = cmd.phase -- 충전형 주무기(SUPERBALL)의 Press/Release
 			else
 				payload.slot = cmd.slot
 				payload.phase = cmd.phase -- 충전형 스킬(SWORD Lunge)의 Press/Release. 서버가 충전 상태를 검증한다.
@@ -155,7 +156,7 @@ remotes:WaitForChild("State").OnClientEvent:Connect(function(snap)
 	end
 	lastSnap = snap
 	local charDef = Characters[snap.characterId]
-	input:setCharacter(snap.characterId, snap.ammo ~= nil, charDef ~= nil and charDef.primary.automatic == true)
+	input:setCharacter(snap.characterId, snap.ammo ~= nil, charDef ~= nil and charDef.primary.automatic == true, charDef ~= nil and charDef.primary.chargeSeconds ~= nil)
 	input:reconcileRun(snap.running, now())
 	hud:setCrosshair(snap.characterId, snap.alive)
 end)

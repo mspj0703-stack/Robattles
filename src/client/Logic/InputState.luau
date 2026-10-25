@@ -36,7 +36,11 @@ function InputState:setBinds(binds)
 	end
 end
 
-function InputState:setCharacter(characterId, hasAmmo, automatic)
+function InputState:setCharacter(characterId, hasAmmo, automatic, chargePrimary)
+	if self.primaryHeld and (chargePrimary ~= true) then
+		self.primaryHeld = false -- 캐릭터가 바뀌면 이전 충전 상태를 버린다(서버도 캐릭터 변경 때 충전을 정리한다)
+	end
+	self.chargePrimary = chargePrimary == true -- 충전형 주무기(SUPERBALL·SLINGSHOT): LMB 누름=Press, 뗌=Release
 	self.hasAmmo = hasAmmo == true
 	self.automatic = automatic == true -- 자동 연사 캐릭터(PAINTBALL): LMB 를 누르고 있으면 반복 발사 요청
 end
@@ -99,7 +103,12 @@ function InputState:press(keyName, now)
 		table.insert(cmds, { remote = "Ultimate" })
 	elseif action == "Primary" or action == "Secondary" then
 		-- Free 모드에서도 RMB는 항상 보조 공격이다(자유 시점 회전은 별도 FreeLook 버튼).
-		table.insert(cmds, { remote = "Attack", action = action })
+		if action == "Primary" and self.chargePrimary then
+			table.insert(cmds, { remote = "Attack", action = action, phase = "Press" })
+			self.primaryHeld = true
+		else
+			table.insert(cmds, { remote = "Attack", action = action })
+		end
 		if action == "Primary" then
 			self._lastPrimaryAt = now
 		end
@@ -136,6 +145,9 @@ function InputState:release(keyName)
 		table.insert(cmds, { localEffect = "Scoreboard", visible = false })
 	elseif action == "FreeLook" then
 		self.freeLookHeld = false
+	elseif action == "Primary" and self.primaryHeld then
+		self.primaryHeld = false
+		table.insert(cmds, { remote = "Attack", action = "Primary", phase = "Release" })
 	elseif action == "Skill2" and self.skill2Held then
 		-- 충전형 스킬(SWORD Lunge): 키를 떼면 서버에 발사 의사를 보낸다. 충전 중이 아니면 서버가 거부한다.
 		self.skill2Held = false
@@ -150,6 +162,10 @@ function InputState:releaseAll()
 	if self.scoreboardHeld then
 		self.scoreboardHeld = false
 		table.insert(cmds, { localEffect = "Scoreboard", visible = false })
+	end
+	if self.primaryHeld then
+		self.primaryHeld = false
+		table.insert(cmds, { remote = "Attack", action = "Primary", phase = "Release" })
 	end
 	if self.skill2Held then
 		self.skill2Held = false
