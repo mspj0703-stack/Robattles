@@ -37,4 +37,4 @@ docs         ASSUMPTIONS.md, TEST_RESULTS.md, STUDIO_TEST_PLAN.md
 전투 코어와 독립된 맵 생성기가 `src/map`에 있다. 사용법·구조·미검증 항목은 `docs/MAP_BRICKYARD.md`, 테스트는 `python3 tools/run_map_tests.py`.
 
 ## Phase 2 Step 1 — SWORD 스킬
-SWORD 전체 스킬(3타 콤보, Triple Slash, Lunge, Blade Wave, Blade Storm, Duelist)이 서버/클라이언트에 구현됨(CLI 검증만, Studio 미검증). 수치 구분은 docs/ASSUMPTIONS.md A65~A67, Studio 체크리스트는 docs/STUDIO_TEST_PLAN.md S58~S75. PAINTBALL(HP 95)·SUPERBALL(HP 100)·TIMEBOMB(HP 105) 구현(CLI 검증만; A68~A78, S76~S109). SLINGSHOT 은 다음 Step. src/simulation/ 은 보존만(작업 중단).
+SWORD 전체 스킬(3타 콤보, Triple Slash, Lunge, Blade Wave, Blade Storm, Duelist)이 서버/클라이언트에 구현됨(CLI 검증만, Studio 미검증). 수치 구분은 docs/ASSUMPTIONS.md A65~A67, Studio 체크리스트는 docs/STUDIO_TEST_PLAN.md S58~S75. PAINTBALL(HP 95)·SUPERBALL(HP 100)·TIMEBOMB(HP 105) 구현(CLI 검증만; A68~A78, S76~S109). SLINGSHOT(HP 100) 구현(CLI 검증만; A79~A80, S110~S119). 5캐릭터 통합 점검·UI 연결·Studio 테스트가 남은 단계. src/simulation/ 은 보존만(작업 중단).

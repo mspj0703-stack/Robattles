@@ -36,9 +36,13 @@ function InputState:setBinds(binds)
 	end
 end
 
-function InputState:setCharacter(characterId, hasAmmo, automatic, chargePrimary)
+function InputState:setCharacter(characterId, hasAmmo, automatic, chargePrimary, localAim)
 	if self.primaryHeld and (chargePrimary ~= true) then
 		self.primaryHeld = false -- 캐릭터가 바뀌면 이전 충전 상태를 버린다(서버도 캐릭터 변경 때 충전을 정리한다)
+	end
+	self.localAim = localAim == true -- RMB 가 클라이언트 전용 조준 표시인 캐릭터(SLINGSHOT): 서버로 보내지 않는다
+	if not self.localAim then
+		self.aimHeld = false
 	end
 	self.chargePrimary = chargePrimary == true -- 충전형 주무기(SUPERBALL·SLINGSHOT): LMB 누름=Press, 뗌=Release
 	self.hasAmmo = hasAmmo == true
@@ -101,6 +105,10 @@ function InputState:press(keyName, now)
 		table.insert(cmds, { remote = "Dodge" })
 	elseif action == "Ultimate" then
 		table.insert(cmds, { remote = "Ultimate" })
+	elseif action == "Secondary" and self.localAim then
+		-- 클라이언트 전용 Aim Mode: 서버 요청·달리기 해제 없음. 궤적 표시만 켠다.
+		self.aimHeld = true
+		table.insert(cmds, { localEffect = "AimMode", active = true })
 	elseif action == "Primary" or action == "Secondary" then
 		-- Free 모드에서도 RMB는 항상 보조 공격이다(자유 시점 회전은 별도 FreeLook 버튼).
 		if action == "Primary" and self.chargePrimary then
@@ -145,6 +153,9 @@ function InputState:release(keyName)
 		table.insert(cmds, { localEffect = "Scoreboard", visible = false })
 	elseif action == "FreeLook" then
 		self.freeLookHeld = false
+	elseif action == "Secondary" and self.aimHeld then
+		self.aimHeld = false
+		table.insert(cmds, { localEffect = "AimMode", active = false })
 	elseif action == "Primary" and self.primaryHeld then
 		self.primaryHeld = false
 		table.insert(cmds, { remote = "Attack", action = "Primary", phase = "Release" })
@@ -162,6 +173,10 @@ function InputState:releaseAll()
 	if self.scoreboardHeld then
 		self.scoreboardHeld = false
 		table.insert(cmds, { localEffect = "Scoreboard", visible = false })
+	end
+	if self.aimHeld then
+		self.aimHeld = false
+		table.insert(cmds, { localEffect = "AimMode", active = false })
 	end
 	if self.primaryHeld then
 		self.primaryHeld = false

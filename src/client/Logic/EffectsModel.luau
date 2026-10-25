@@ -10,6 +10,10 @@ local EffectsModel = {}
 local PROJECTILE_CUES = {
 	color_bomb = { fire = "paint.bomb.throw", proj = "paint.bomb.projectile" },
 	piercing_shot = { fire = "paint.pierce.fire", proj = "paint.pierce.projectile" },
+	sling_Lmb = { fire = "sling.fire", proj = "sling.projectile" },
+	sling_Triple = { fire = "sling.fire", proj = "sling.projectile" },
+	sling_Snare = { fire = "sling.snare", proj = "sling.projectile" },
+	sling_Backstep = { fire = "sling.fire", proj = "sling.projectile" },
 }
 
 -- 반환: { { cue, playerId?, targetId?, pos?, dir?, mine?, ... } }

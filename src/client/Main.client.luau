@@ -23,6 +23,7 @@ local CameraRig = require(script.Parent.CameraRig)
 local HudView = require(script.Parent.HudView)
 local ScoreboardView = require(script.Parent.ScoreboardView)
 local SettingsView = require(script.Parent.SettingsView)
+local AimView = require(script.Parent.AimView)
 
 local player = Players.LocalPlayer
 local remotes = ReplicatedStorage:WaitForChild("RoBattles"):WaitForChild("Remotes")
@@ -34,6 +35,8 @@ local rig = CameraRig.new(input)
 local hud = HudView.new()
 local effects = EffectPlayer.new(function() return workspace:GetServerTimeNow() end)
 local board = ScoreboardView.new()
+local aimView = AimView.new() -- SLINGSHOT RMB Aim Mode 궤적(표시 전용)
+local chargeStart -- 클라이언트가 충전 시작을 본 시각(표시용 추정. 실제 충전량은 서버가 정한다)
 local lastSnap, lastModel
 local lastDodgeAccepted
 local dodgeState -- { start, dir }
@@ -80,6 +83,8 @@ local function send(cmd)
 		rig:setMode(cmd.mode)
 	elseif cmd.localEffect == "Scoreboard" then
 		board:setVisible(cmd.visible)
+	elseif cmd.localEffect == "AimMode" then
+		aimView:setActive(cmd.active)
 	elseif cmd.remote == "Attack" or cmd.remote == "Skill" then
 		local kind, range = "Projectile", nil
 		if cmd.action == "Primary" then kind, range = currentPrimaryKind() end
@@ -156,7 +161,10 @@ remotes:WaitForChild("State").OnClientEvent:Connect(function(snap)
 	end
 	lastSnap = snap
 	local charDef = Characters[snap.characterId]
-	input:setCharacter(snap.characterId, snap.ammo ~= nil, charDef ~= nil and charDef.primary.automatic == true, charDef ~= nil and charDef.primary.chargeSeconds ~= nil)
+	input:setCharacter(snap.characterId, snap.ammo ~= nil, charDef ~= nil and charDef.primary.automatic == true, charDef ~= nil and charDef.primary.chargeSeconds ~= nil, charDef ~= nil and charDef.secondary ~= nil and charDef.secondary.clientOnly == true)
+	if not snap.alive or charDef == nil or charDef.secondary == nil or charDef.secondary.clientOnly ~= true then
+		aimView:setActive(false) -- 사망·캐릭터 변경 시 궤적 표시 정리
+	end
 	input:reconcileRun(snap.running, now())
 	hud:setCrosshair(snap.characterId, snap.alive)
 end)
@@ -269,6 +277,21 @@ if player.Character then rig:setCharacter(player.Character) end
 RunService.RenderStepped:Connect(function()
 	rig:update()
 	local h = hrp()
+	-- SLINGSHOT Aim Mode 궤적: 충전 표시용 추정값(누른 시간 / chargeSeconds). 서버 판정과 무관.
+	if input.primaryHeld then
+		chargeStart = chargeStart or now()
+	else
+		chargeStart = nil
+	end
+	if input.aimHeld and h and lastSnap then
+		local o, d = rig:aim(300)
+		local def = Characters[lastSnap.characterId]
+		if o and def and def.primary.chargeSeconds then
+			local charge = chargeStart and math.clamp((now() - chargeStart) / def.primary.chargeSeconds, 0, 1) or 0
+			local p = h.Position
+			aimView:update({ X = p.X, Y = p.Y + Config.Combat.EyeHeight, Z = p.Z }, { X = d.X, Y = d.Y, Z = d.Z }, charge, lastSnap.characterId)
+		end
+	end
 	if h and dodgeState and dodgeState.dir then
 		local d = dodgeState.dir
 		local v = MovementModel.dodgeVelocity(dodgeState.start, { X = d.X, Y = d.Y, Z = d.Z }, now(), nil, dodgeState.distance)

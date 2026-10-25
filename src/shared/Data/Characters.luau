@@ -237,4 +237,47 @@ Characters.TIMEBOMB = {
 	passive = { id = "ChainReaction", radius = 7, maxStages = 3 }, -- 확정
 }
 
+-- SLINGSHOT (Phase 2). 확정: HP 100, LMB 충전 샷(최대 충전 1초·피해 12~26·충전이 속도/사거리에 비례·충전 중 이동 80%·점프 가능·놓을 때 발사·충전량/피해는 서버 결정),
+-- RMB Aim Mode(탄도 표시 전용·에임 보조 없음·서버 상태 없음), 스킬1 Triple Shot 독립 3발×14·쿨 8, 스킬2 Snare Shot 18 + 둔화 1초 + 적중 위치 표식·쿨 11,
+-- 스킬3 Backstep Shot 약 10스터드 후방 이동 + 16 피해 사격·쿨 9(이동 허가 + 충돌), 궁극기 Bullseye(약 0.7초 조준·고속 관통 아님·일반 55/정밀 75·정밀 = 표준 몸통 중심의 작은 판정(머리 아님)·스윕 충돌),
+-- 패시브 Bullseye Mark(같은 대상에 LMB 유효 적중 2회 → 5초 표식, 표식 대상에 LMB 적중 시 +8, 빗나가도 표식 유지).
+-- 임시(A79~A80): 충전 속도/중력/수명, 둔화 배율 0.5, 삼중 산탄 각도, 후방 이동 시간, 정밀 판정 반경 0.9, 궁극기 속도/사거리, 표식 카운트 창 8초, LMB 발사 간격 등.
+Characters.SLINGSHOT = {
+	id = "SLINGSHOT",
+	displayName = "Slingshot",
+	maxHealth = 100, -- 확정
+	module = "Slingshot",
+	primary = {
+		kind = "Projectile", automatic = false, damage = 12, -- damage: 최소 피해(ActionPolicy 가 공격으로 분류하도록)
+		minDamage = 12, maxDamage = 26, chargeSeconds = 1.0, -- 확정
+		maxHoldSeconds = 5, fireInterval = 0.5, chargeMoveMult = 0.8, -- 이동 80% 확정, 나머지 임시
+		shot = { speedMin = 60, speedMax = 150, gravity = 22, lifetimeMin = 0.9, lifetimeMax = 1.8, radius = 0.3 }, -- 충전이 속도·사거리(수명)에 비례
+	},
+	-- RMB Aim Mode: 클라이언트 전용 탄도 표시. 서버 상태·쿨타임 없음, 에임 보조 없음.
+	secondary = { id = "AimMode", name = "Aim Mode", kind = "Utility", clientOnly = true, noAimAssist = true },
+	skills = {
+		[1] = {
+			id = "TripleShot", name = "Triple Shot", kind = "Skill", cooldown = 8, damage = 14, shots = 3, -- 확정
+			spread = { { 0, 0 }, { -3, 0 }, { 3, 0 } }, -- 임시
+			shot = { speed = 120, gravity = 22, lifetime = 1.4, radius = 0.3 },
+		},
+		[2] = {
+			id = "SnareShot", name = "Snare Shot", kind = "Skill", cooldown = 11, damage = 18, slowSeconds = 1.0, -- 확정
+			slowMult = 0.5, shot = { speed = 110, gravity = 22, lifetime = 1.5, radius = 0.35 }, -- 임시
+		},
+		[3] = {
+			id = "BackstepShot", name = "Backstep Shot", kind = "Skill", cooldown = 9, damage = 16, distance = 10, -- 확정
+			duration = 0.25, minDistance = 1, permit = "Backstep", -- 임시
+			shot = { speed = 130, gravity = 22, lifetime = 1.4, radius = 0.3 },
+		},
+	},
+	ultimate = {
+		id = "Bullseye", name = "Bullseye", kind = "Ultimate",
+		windup = 0.7, damage = 55, preciseDamage = 75, -- 확정
+		preciseRadius = 0.9, -- 임시: 정밀 판정 = 대상 몸통 중심에서 이 반경 안을 통과(테스트 가능한 설정값, 머리 아님)
+		speed = 600, range = 300, lifetime = 0.6, shotRadius = 0.3, duration = 0.9, -- 임시
+	},
+	passive = { id = "BullseyeMark", hitsToMark = 2, markSeconds = 5, bonusDamage = 8, countWindow = 8 }, -- 개수·5초·+8 확정, 창 임시
+}
+
 return Characters

@@ -20,12 +20,14 @@ local SwordSkills = require(script.Parent.SwordSkills)
 local PaintballSkills = require(script.Parent.PaintballSkills)
 local SuperballSkills = require(script.Parent.SuperballSkills)
 local TimebombSkills = require(script.Parent.TimebombSkills)
+local SlingshotSkills = require(script.Parent.SlingshotSkills)
 
 -- 캐릭터 데이터의 `module` 이름 → 서버 로직 모듈(Phase 2). 모듈이 없는 캐릭터는 공통 경로(근접/직선 발사)로 처리한다.
 local IMPLS = {
 	Paintball = PaintballSkills,
 	Superball = SuperballSkills,
 	Timebomb = TimebombSkills,
+	Slingshot = SlingshotSkills,
 }
 
 local CharacterController = {}
@@ -153,6 +155,9 @@ function CharacterController.new(deps)
 	end)
 	self._core.damage:onKilled(function(e)
 		self._sword:onTargetGone(e.targetId)
+		for _, impl in self._impl do
+			impl:onTargetGone(e.targetId) -- 표식 등 대상에 걸린 상태 정리
+		end
 		self:handleDeath(e.targetId, e.now)
 	end)
 	return self
@@ -240,6 +245,9 @@ function CharacterController:removePlayer(id, now)
 	self._aim[id] = nil
 	self._sword:reset(id)
 	self._sword:onTargetGone(id)
+	for _, impl in self._impl do
+		impl:onTargetGone(id)
+	end
 	self._projectiles:ownerRemoved(id, now)
 	self._core:removePlayer(id)
 	self._p[id] = nil

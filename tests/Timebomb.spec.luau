@@ -114,7 +114,7 @@ T.describe("TIMEBOMB 구조·확정 수치", function()
 	T.it("SelectCharacter 에 TIMEBOMB 포함, 테스트 전용 GUNNER 는 실제 데이터·선택 스키마에 없다", function()
 		T.expect(RemoteSpec.validate("SelectCharacter", { characterId = "TIMEBOMB" }))
 		T.expect(not RemoteSpec.validate("SelectCharacter", { characterId = "GUNNER" }))
-		T.expect(not RemoteSpec.validate("SelectCharacter", { characterId = "SLINGSHOT" })) -- 아직 미구현
+		T.expect(RemoteSpec.validate("SelectCharacter", { characterId = "SLINGSHOT" })) -- Phase 2 SLINGSHOT 구현으로 허용
 		T.expect(Characters.GUNNER == nil)
 		T.expect(H.legacyChars(Characters).GUNNER ~= nil and Characters.GUNNER == nil) -- GUNNER 는 테스트 헬퍼에서만 만들어진다
 		for id in Characters do T.expect(id ~= "GUNNER", id) end

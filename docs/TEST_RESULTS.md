@@ -1,6 +1,6 @@
 # 자동 테스트 결과 (Luau CLI, 순수 로직)
 
-실행 시각: 2026-10-25 14:59
+실행 시각: 2026-10-25 21:08
 종료 코드: 0
 
 ```
@@ -696,6 +696,53 @@ PASS  TIMEBOMB 클라이언트 순수 로직 > InputState: 스킬 2 는 누름=P
 PASS  TIMEBOMB 클라이언트 순수 로직 > EffectsModel: BombSpawn → 폭탄 큐, BombLand → 고정, BombExplode → 폭발 + 제거
 PASS  TIMEBOMB 클라이언트 순수 로직 > HUD: 최대 체력 105, Remote Bomb 충전·설치 표시, 충전 0 이면 복구 시간
 PASS  TIMEBOMB 클라이언트 순수 로직 > 무기·조준선 카탈로그 등록
+PASS  SLINGSHOT 구조·확정 수치 > HP 100, 모듈 연결, 확정 수치
+PASS  SLINGSHOT 구조·확정 수치 > SelectCharacter 에 SLINGSHOT 포함(GUNNER 는 없음), Attack phase 는 Press/Release 만
+PASS  SLINGSHOT LMB 충전 샷 > 충전 0 → 12, 0.5s → 19, 1.0s 이상 → 26 (선형), 서버가 충전량을 결정
+PASS  SLINGSHOT LMB 충전 샷 > 충전할수록 속도가 빨라진다(60→150)
+PASS  SLINGSHOT LMB 충전 샷 > 충전 중 이동속도 80%, 발사 후 복구, 공중(점프)에서도 충전·발사 가능
+PASS  SLINGSHOT LMB 충전 샷 > Release 없이 Press 만: 발사·피해 없음, 중복 Press 거부, Press 없는 Release 거부
+PASS  SLINGSHOT LMB 충전 샷 > 늦은 Release(5초 초과)는 거부, 쿨타임 소모 없음, 충전 해제
+PASS  SLINGSHOT LMB 충전 샷 > 발사 간격 0.5s: 연사 거부
+PASS  SLINGSHOT LMB 충전 샷 > 중복 Release: 한 번의 충전은 한 발만
+PASS  SLINGSHOT LMB 충전 샷 > 벽 충돌: 벽 뒤 적은 맞지 않는다
+PASS  SLINGSHOT LMB 충전 샷 > 사망 중 충전: 충전·감속 정리, 부활 후 Release 거부
+PASS  SLINGSHOT LMB 충전 샷 > 부활 보호: Press/거부는 유지, 발사 성공 시 해제
+PASS  SLINGSHOT LMB 충전 샷 > 자기 자신은 맞지 않는다
+PASS  SLINGSHOT RMB Aim Mode > 서버는 상태·쿨타임·보호를 건드리지 않는다(클라이언트 표시 전용, 에임 보조 없음)
+PASS  SLINGSHOT 스킬 1 Triple Shot > 한 대상에 3발 × 14 = 42, 쿨타임 8s
+PASS  SLINGSHOT 스킬 1 Triple Shot > 발사체가 독립적으로 3개 생성된다
+PASS  SLINGSHOT 스킬 1 Triple Shot > 거부된 요청은 쿨타임을 다시 소모하지 않는다 / 성공 시 보호 해제
+PASS  SLINGSHOT 스킬 2 Snare Shot > 피해 18 + 1초 감속(0.5), 이후 해제, 위치 표시 이벤트
+PASS  SLINGSHOT 스킬 2 Snare Shot > 빗나가면 감속·표시 없음, 쿨타임 11s
+PASS  SLINGSHOT 스킬 3 Backstep Shot > 후방 이동(이동 허가) + 16 피해, 쿨타임 9s
+PASS  SLINGSHOT 스킬 3 Backstep Shot > 뒤가 벽이면 거부: 사격·쿨타임·보호 불변
+PASS  SLINGSHOT 스킬 3 Backstep Shot > 이동 허가 거부(간격 위반)면 사격 없음·쿨타임 없음·보호 유지
+PASS  SLINGSHOT 궁극기 Bullseye > 조준 0.7s 후 발사: 그 전엔 피해 없음
+PASS  SLINGSHOT 궁극기 Bullseye > 일반 명중 55 / 정밀 명중 75(표준 몸통 중심의 작은 판정)
+PASS  SLINGSHOT 궁극기 Bullseye > 정밀 판정 반경은 설정값(preciseRadius)으로 조정된다
+PASS  SLINGSHOT 궁극기 Bullseye > 조준 방향 갱신(Aim)이 반영된다 / 에임 보조 없음
+PASS  SLINGSHOT 궁극기 Bullseye > 고속탄은 터널링하지 않는다: 먼 거리 명중 & 벽 뒤 차단
+PASS  SLINGSHOT 궁극기 Bullseye > 조준 중 LMB·스킬 거부 (쿨타임 불변)
+PASS  SLINGSHOT 궁극기 Bullseye > 조준 중 사망하면 발사되지 않는다
+PASS  SLINGSHOT 궁극기 Bullseye > 게이지 없이는 거부, 사용 중 재사용 거부
+PASS  SLINGSHOT 패시브 Bullseye Mark > LMB 2회 명중 → 표식, 다음 샷에 +8, 표식 소모
+PASS  SLINGSHOT 패시브 Bullseye Mark > 빗나가면 표식 유지, 5초 후 만료
+PASS  SLINGSHOT 패시브 Bullseye Mark > 다른 대상을 맞혀도 기존 표식은 소모되지 않는다
+PASS  SLINGSHOT 패시브 Bullseye Mark > 스킬 샷은 LMB 카운트에 포함되지 않는다
+PASS  SLINGSHOT 패시브 Bullseye Mark > 소유자 사망/부활 시 표식과 카운트 정리
+PASS  SLINGSHOT 패시브 Bullseye Mark > 대상이 나가면(removePlayer) 표식 정리
+PASS  SLINGSHOT 패시브 Bullseye Mark > 대상이 죽으면 표식 정리
+PASS  SLINGSHOT 패시브 Bullseye Mark > 캐릭터를 바꿔 부활하면 표식이 남지 않는다
+PASS  SLINGSHOT 클라이언트 로직(입력·궤적·큐) > RMB 는 서버로 보내지 않고 로컬 Aim Mode 만 켜고 끈다(달리기 유지)
+PASS  SLINGSHOT 클라이언트 로직(입력·궤적·큐) > LMB 는 Press/Release 로 전송, 창 포커스 상실 시 Release + Aim 해제
+PASS  SLINGSHOT 클라이언트 로직(입력·궤적·큐) > 다른 캐릭터로 바뀌면 Aim 상태 해제, 다른 캐릭터의 RMB 는 서버로 간다
+PASS  SLINGSHOT 클라이언트 로직(입력·궤적·큐) > 궤적: 서버와 같은 포물선(등속+중력), 충전할수록 멀리
+PASS  SLINGSHOT 클라이언트 로직(입력·궤적·큐) > 궤적은 벽에서 끊긴다
+PASS  SLINGSHOT 클라이언트 로직(입력·궤적·큐) > 서버 탄 정의 id → SLINGSHOT 연출 큐, CharSkill 큐 변환, 조준선 등록
+PASS  SLINGSHOT 다인·노출 > 두 SLINGSHOT 의 충전은 독립
+PASS  SLINGSHOT 다인·노출 > HUD 스냅샷: 충전 중 chargeFrac 제공
+PASS  SLINGSHOT 다인·노출 > 12명 동시 충전·발사에서도 오류 없이 처리된다
 PASS  EffectsModel: 이벤트 → 연출 큐 > Swing → sword.slash (내 것 mine=true)
 PASS  EffectsModel: 이벤트 → 연출 큐 > 패링 시작/성공/반격 표시
 PASS  EffectsModel: 이벤트 → 연출 큐 > Damaged → 피격 번쩍임 + 충격 연출, 공격자 관점 mine 구분
@@ -748,5 +795,5 @@ PASS  통합: 서버/클라이언트 동기화 > Correct 이벤트 수용: 최�
 PASS  통합: 서버/클라이언트 동기화 > dodgeVelocity: 서버가 줄인 거리 반영, 0이면 이동 없음, 기본 거리 초과 값은 제한
 PASS  통합: 서버/클라이언트 동기화 > 서버 보정 → 같은 위치 재관찰은 ok: 보정이 반복 루프를 만들지 않는다
 
-합계: 743 통과 / 0 실패 / 743 전체
+합계: 790 통과 / 0 실패 / 790 전체
 ```

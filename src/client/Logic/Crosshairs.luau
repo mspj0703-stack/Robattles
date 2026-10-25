@@ -7,6 +7,7 @@ local registry = {
 	SWORD = { style = "Ring", size = 18, spread = 0 }, -- 임시 디자인 (미확정)
 	PAINTBALL = { style = "Cross", size = 14, spread = 4 }, -- 임시 디자인 (미확정)
 	TIMEBOMB = { style = "Cross", size = 14, spread = 8 }, -- 임시 디자인 (미확정)
+	SLINGSHOT = { style = "Dot", size = 8, spread = 0 }, -- 임시 디자인 (미확정): 에임 보조 없음, 정밀 조준용 작은 점
 	SUPERBALL = { style = "Ring", size = 16, spread = 6 }, -- 임시 디자인 (미확정)
 }
 

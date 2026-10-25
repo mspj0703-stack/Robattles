@@ -117,6 +117,7 @@ local Config = {
 			PaintSlide = { maxSpeed = 45, maxUp = 0, maxDuration = 1.5, minInterval = 1, directional = true },
 			BounceDash = { maxSpeed = 90, maxUp = 40, maxDuration = 0.8, minInterval = 1, directional = false },
 			BlastJump = { maxSpeed = 70, maxUp = 110, maxDuration = 1.2, minInterval = 1, directional = false },
+			Backstep = { maxSpeed = 60, maxUp = 10, maxDuration = 0.6, minInterval = 1, directional = false }, -- A79: SLINGSHOT Backstep Shot 후방 이동
 			BlastGuard = { maxSpeed = 60, maxUp = 20, maxDuration = 0.5, minInterval = 1, directional = false }, -- A76: TIMEBOMB Blast Guard 자기 반동
 		},
 		MaxActivePermits = 8,	},
