@@ -131,3 +131,14 @@ Studio 체크리스트:
 - Animator 가 늦게 생기는 경우: Animator 가 없는 동안은 에셋 구동으로 판정하지 않고 절차 포즈로 재생한다. rig 준비 전에 도착한 이벤트는 최대 16개/1초까지 보류했다가 rig 생성 직후 원래 수신 시각으로 재생한다.
 - `tools/check_anim.py`: 기본 기준 커밋 `ac6d48f`. Git 저장소가 없거나 기준 커밋 확인/비교가 실패하면 FAIL(종료코드 2).
 - 모두 Studio 미검증. R6 는 프로젝트 파일이 강제하지 않는다(Studio 의 Avatar Type 설정 필요).
+
+## R6 사용 (Alpha 1.0 임시 애니메이션)
+- Alpha 1.0 의 SWORD 애니메이션은 **R6 전용**이다. Studio 에서 `Home → Game Settings → Avatar → Avatar Type = R6` 로 설정한 뒤 테스트한다(게시 시 같은 설정 필요).
+- 프로젝트 파일(`*.project.json`)에는 아바타 타입 속성을 추가하지 않았다(Rojo 가 지원하지 않는 속성을 임의로 넣지 않는다).
+- R15 에서는 `RigStatus.classify` 가 `unsupported` 를 반환해 경고 1회 후 SWORD 애니메이션만 비활성화되고, 기존 캐릭터 동작·전투·UI 는 그대로다(CLI 로직 테스트로 검증, 실제 R15 리그는 Studio 미검증).
+- R15 장기 지원 여부는 기획방 결정 사항이다(미결정).
+
+## Blade Storm End 이벤트 시각
+- 이전: `CharacterController` 의 `onEnd` 가 발동 시각 `now` 를 캡처 → 정상 종료/사망/경기 경계 모두 End.time = 발동 시각.
+- 수정: `SwordSkills` 가 마지막 서버 시각(`_lastNow`, `update`/`startStorm` 에서 갱신)을 보관하고, 시각을 받지 못하는 `onEnd` 경로는 이를 사용한다. 명시 시각이 있는 경로(사망 핸들러)는 그대로. 다른 3캐릭터 모듈의 `_lastNow` 방식과 동일하다.
+- 서버 내부에서 End.time 을 소비하는 곳은 없다(이벤트 필드일 뿐). 피해(틱 5×8 + 마무리 25), 이벤트 종류, Remote 계약은 불변.

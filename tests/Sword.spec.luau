@@ -376,6 +376,61 @@ T.describe("SWORD Ultimate — Blade Storm (5×8 + 25)", function()
 		T.expectEqual(count(events, "SwordSkill", function(e) return e.skill == "BladeStorm" and e.phase == "Finisher" end), 1)
 		T.expect(not core.ultimate:isActive("a"))
 	end)
+	T.it("Blade Storm End 이벤트 시각: 정상 종료는 발동 시각이 아니라 실제 종료 시각(≥ 발동 + 3.0)", function()
+		local c, core, pos, events = setup({ a = "SWORD" })
+		full(core, "a")
+		T.expect((c:handleUltimate("a", {}, 1.0)))
+		local t = 1.0
+		while t < 4.3 do t += 0.05; c:update(t, 0.05) end
+		local ends = {}
+		for _, e in events do
+			if e.type == "SwordSkill" and e.skill == "BladeStorm" and e.phase == "End" then table.insert(ends, e) end
+		end
+		T.expectEqual(#ends, 1)
+		T.expectEqual(ends[1].reason, "Completed")
+		T.expect(ends[1].time >= 4.0 - 1e-6 and ends[1].time <= 4.1, "End.time=" .. tostring(ends[1].time))
+	end)
+	T.it("Blade Storm End 이벤트 시각: 경기 경계 강제 종료는 마지막 서버 시각, End 는 1회, 피해량 불변", function()
+		local c, core, pos, events = setup({ a = "SWORD", b = "SWORD" })
+		pos.b = v(0, 0, 5)
+		full(core, "a")
+		c:handleUltimate("a", {}, 0)
+		local t = 0
+		while t < 1.0 do t += 0.05; c:update(t, 0.05) end
+		c:clearMatchTransient("a")
+		local ends = {}
+		for _, e in events do
+			if e.type == "SwordSkill" and e.skill == "BladeStorm" and e.phase == "End" then table.insert(ends, e) end
+		end
+		T.expectEqual(#ends, 1)
+		T.expectEqual(ends[1].reason, "MatchBoundary")
+		T.expect(ends[1].time > 0.9 and ends[1].time <= 1.0 + 1e-6, "End.time=" .. tostring(ends[1].time))
+		local before = hp(core, "b")
+		while t < 3.3 do t += 0.05; c:update(t, 0.05) end
+		T.expectEqual(hp(core, "b"), before) -- 종료 후 추가 피해 없음
+		c:clearMatchTransient("a")
+		local n = 0
+		for _, e in events do
+			if e.type == "SwordSkill" and e.skill == "BladeStorm" and e.phase == "End" then n += 1 end
+		end
+		T.expectEqual(n, 1) -- 재호출해도 중복 End 없음
+	end)
+	T.it("Blade Storm End 이벤트 시각: 사망 종료 End.time 은 0(발동 시각)이 아니라 사망 직전 서버 시각 이후", function()
+		local c, core, pos, events = setup({ a = "SWORD", k = "SWORD" })
+		full(core, "a")
+		c:handleUltimate("a", {}, 0)
+		local t = 0
+		while t < 0.7 do t += 0.05; c:update(t, 0.05) end
+		core.damage:applyDamage({ attackerId = "k", targetId = "a", attackId = "x", amount = 999 }, 0.75)
+		local n = 0
+		for _, e in events do
+			if e.type == "SwordSkill" and e.skill == "BladeStorm" and e.phase == "End" then
+				n += 1
+				T.expect(e.time >= 0.65 and e.time <= 0.75 + 1e-6, "End.time=" .. tostring(e.time))
+			end
+		end
+		T.expectEqual(n, 1)
+	end)
 	T.it("시전 중 다른 공격/스킬/재발동은 busy, 끝나면 다시 가능", function()
 		local c, core = setup({ a = "SWORD" })
 		full(core, "a")

@@ -12,7 +12,9 @@ BASE = sys.argv[1] if len(sys.argv) > 1 else "ac6d48f"
 FORBIDDEN_PREFIX = ("src/server/", "src/map/", "src/client/UI/", "src/simulation/")
 FORBIDDEN_FILES = {"src/shared/RemoteSpec.luau", "src/shared/Data/Characters.luau", "src/shared/Config.luau", "src/shared/Schema.luau",
                    "default.project.json", "integrated.project.json", "brickyard.project.json"}
-ALLOWED_SHARED_EDIT = {"src/client/Main.client.luau", "tests/run_all.luau", "docs/STUDIO_TEST_PLAN.md"}
+# 승인된 서버 수정(Blade Storm End 이벤트 시각) 에 한해 아래 3개 파일만 예외. 그 밖의 서버/금지 영역 변경은 계속 FAIL.
+APPROVED_SERVER_EDITS = {"src/server/SwordSkills.luau", "src/server/CharacterController.luau", "tests/Sword.spec.luau"}
+ALLOWED_SHARED_EDIT = {"src/client/Main.client.luau", "tests/run_all.luau", "docs/STUDIO_TEST_PLAN.md"} | APPROVED_SERVER_EDITS
 fails = 0
 def check(ok, msg):
     global fails
@@ -34,7 +36,7 @@ except (RuntimeError, OSError) as e:
     print("실패 1")
     sys.exit(2)
 changed = set(diff_names) | set(untracked)
-bad = sorted(f for f in changed if f in FORBIDDEN_FILES or f.startswith(FORBIDDEN_PREFIX))
+bad = sorted(f for f in changed if (f in FORBIDDEN_FILES or f.startswith(FORBIDDEN_PREFIX)) and f not in APPROVED_SERVER_EDITS)
 check(not bad, "금지 영역 파일 변경 없음 (변경: %s)" % bad)
 modified = sorted(set(diff_names) - set(f for f in changed if f.startswith(("src/client/Logic/", "src/client/SwordAnimator", "src/shared/Data/Motion", "src/shared/Data/SwordMotions", "tests/SwordAnim", "docs/SWORD", "tools/check_anim"))))
 check(set(modified) <= ALLOWED_SHARED_EDIT, "기존 파일 수정은 허용 목록만: %s" % modified)

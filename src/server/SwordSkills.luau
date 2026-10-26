@@ -39,6 +39,7 @@ function SwordSkills.new(deps)
 		_triple = {}, -- [id] = { step, lastAt, windowUntil }
 		_lunge = {}, -- [id] = { state = "charging" | "dashing", ... }
 		_storm = {}, -- [id] = { startAt, nextTick, finisherDone }
+		_lastNow = 0, -- 마지막으로 본 서버 시각(onEnd 처럼 시각을 못 받는 경로의 End 이벤트 시각)
 		_counter = 0,
 	}, SwordSkills)
 end
@@ -384,6 +385,7 @@ end
 -- ── Ultimate: Blade Storm ───────────────────────────────────
 -- 게이지 소모(UltimateService.activate)가 성공한 뒤에만 호출한다.
 function SwordSkills:startStorm(id, now)
+	self._lastNow = math.max(self._lastNow, now)
 	self._counter += 1
 	self._storm[id] = { startAt = now, nextTick = 1, finisherDone = false, serial = self._counter }
 	self._d.stopRunning(id)
@@ -393,6 +395,7 @@ end
 function SwordSkills:endStorm(id, reason, now)
 	if self._storm[id] then
 		self._storm[id] = nil
+		now = now or self._lastNow -- 궁극기 정상 종료/경기 경계 등 시각 없는 경로: 마지막 서버 시각
 		self._d.emit({ type = "SwordSkill", skill = "BladeStorm", phase = "End", playerId = id, reason = reason, time = now })
 	end
 end
@@ -450,6 +453,7 @@ end
 
 -- 서버 루프
 function SwordSkills:update(now)
+	self._lastNow = math.max(self._lastNow, now)
 	for id in self._triple do
 		self:_expireTriple(id, now)
 	end

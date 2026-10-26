@@ -755,7 +755,7 @@ function CharacterController:handleUltimate(id, payload, now)
 		ultDef = {
 			duration = def.ultimate.duration,
 			onEnd = function(reason)
-				self._sword:endStorm(id, reason, now)
+				self._sword:endStorm(id, reason, nil) -- 발동 시각(now) 캡처 금지: 실제 종료 시각(마지막 서버 update 시각)을 쓴다
 			end,
 		}
 	end
