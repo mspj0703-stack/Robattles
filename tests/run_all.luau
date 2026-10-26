@@ -31,6 +31,7 @@ require(script.Parent["Timebomb.spec"])
 require(script.Parent["Slingshot.spec"])
 require(script.Parent["Integration5.spec"])
 require(script.Parent["Effects.spec"])
+require(script.Parent["SwordAnim.spec"])
 require(script.Parent["Spawn.spec"])
 require(script.Parent["Integration.spec"])
 
