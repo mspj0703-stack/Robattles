@@ -1,0 +1,10 @@
+{
+  "name": "RoBattles-Brickyard",
+  "tree": {
+    "$className": "DataModel",
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "BrickyardMap": { "$path": "src/map" }
+    }
+  }
+}
