@@ -37,7 +37,12 @@ function Hud.new(parent)
 	self.ammo.TextXAlignment=Enum.TextXAlignment.Center
 	self.protect=C.text(root,"Protection","",430,485,420,35,20,T.Health)
 	self.protect.TextXAlignment=Enum.TextXAlignment.Center
-	self.toast=C.text(root,"Toast","",390,120,500,50,24,T.Action)
+	-- KO is separate from generic toast and incoming damage so these messages never overwrite each other.
+    self.ko=C.text(root,"KONotice","",450,173,380,55,34,T.Action)
+    self.ko.TextXAlignment=Enum.TextXAlignment.Center; self.ko.Visible=false
+    self.taken=C.text(root,"TakenDamage","",497,410,286,34,21,T.Danger)
+    self.taken.TextXAlignment=Enum.TextXAlignment.Center; self.taken.Visible=false
+    self.toast=C.text(root,"Toast","",390,120,500,50,24,T.Action)
 	self.toast.TextXAlignment=Enum.TextXAlignment.Center
 	self.feed=C.text(root,"KillFeed","",965,120,300,190,17)
 	self.feed.TextYAlignment=Enum.TextYAlignment.Top
@@ -106,7 +111,9 @@ function Hud:render(m,now)
 	self.protect.Visible=m.protection~=nil
 	if m.protection then C.set(self.protect,string.format("SPAWN SHIELD · %.1fs",m.protection.remaining)) end
 	self.toast.Visible=now<self.toastUntil
-	self.hit.Visible=self.hitUntil~=nil and now<self.hitUntil
+	self.ko.Visible=self.koUntil~=nil and now<self.koUntil
+    self.taken.Visible=self.takenUntil~=nil and now<self.takenUntil
+    self.hit.Visible=self.hitUntil~=nil and now<self.hitUntil
 	self.damage.Visible=self.damageUntil~=nil and now<self.damageUntil
 	self.cross.Visible=m.alive
 	if self.shakeUntil and now<self.shakeUntil then
@@ -114,11 +121,45 @@ function Hud:render(m,now)
 	else self.root.Position=UDim2.new() end
 end
 function Hud:showHitMarker(now) self.hitUntil=now+0.15 end
-function Hud:showDamage(amount,now) self.damage.Text=tostring(amount); self.damageUntil=now+0.55 end
+-- Accumulate rapid *server-confirmed* hits into one readable counter; never invent bonus damage.
+function Hud:showDamage(amount,now)
+    if type(amount) ~= "number" or amount ~= amount or amount <= 0 then return end
+    if self.damageWindowEnd and now <= self.damageWindowEnd then
+        self.damageTotal += amount
+        self.damageHits += 1
+    else
+        self.damageTotal = amount
+        self.damageHits = 1
+    end
+    self.damageWindowEnd = now + 0.16
+    self.damage.Text = string.format("%d%s", math.floor(self.damageTotal + 0.5), self.damageHits > 1 and ("  x" .. self.damageHits) or "")
+    self.damageUntil = now + 0.55
+end
+function Hud:showTakenDamage(amount,now)
+    if type(amount) ~= "number" or amount ~= amount or amount <= 0 then return end
+    self.taken.Text = string.format("-%d", math.floor(amount + 0.5))
+    self.takenUntil = now + 0.35
+end
+function Hud:showKO(healed,now)
+    local heal = type(healed) == "number" and healed == healed and healed > 0 and math.floor(healed+0.5) or 0
+    if self.koUntil and now < self.koUntil and self.koLastAt and now - self.koLastAt <= 0.6 then
+        self.koCount += 1
+    else
+        self.koCount = 1
+    end
+    self.koLastAt = now
+    self.ko.Text = "KO!" .. (self.koCount > 1 and (" x" .. self.koCount) or "") .. (heal > 0 and ("  +" .. heal .. " HP") or "")
+    self.koUntil = now + 1.1
+    -- Keep the old toast for existing UI users and test contracts.
+    self:showToast(heal > 0 and string.format("KO!  +%d HP",heal) or "KO!",now,1)
+end
 function Hud:shake(now) self.shakeUntil=now+0.16 end
 function Hud:showToast(text,now,seconds) self.toast.Text=text; self.toastUntil=now+(seconds or 2) end
 function Hud:clearTransient()
 	self.toastUntil=0; self.hitUntil=nil; self.damageUntil=nil; self.shakeUntil=nil
-	self.hit.Visible=false; self.damage.Visible=false; self.toast.Visible=false; self.root.Position=UDim2.new()
+    self.koUntil=nil; self.koLastAt=nil; self.koCount=nil
+    self.takenUntil=nil; self.damageWindowEnd=nil; self.damageHits=nil; self.damageTotal=nil
+	self.hit.Visible=false; self.damage.Visible=false; self.toast.Visible=false
+    self.ko.Visible=false; self.taken.Visible=false; self.root.Position=UDim2.new()
 end
 return Hud

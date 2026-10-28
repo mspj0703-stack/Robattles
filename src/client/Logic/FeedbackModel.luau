@@ -42,9 +42,9 @@ function FeedbackModel.translate(event, myId)
 		if event.targetId == myId then
 			table.insert(out, { kind = "DamageTaken", amount = event.amount })
 		end
-		if event.attackerId == myId then
-			table.insert(out, { kind = "HitMarker", count = 1, amount = event.amount })
-		end
+		if event.attackerId == myId and event.targetId ~= myId and type(event.amount) == "number" and event.amount > 0 then
+            table.insert(out, { kind = "HitMarker", count = 1, amount = event.amount })
+        end
 	elseif t == "Died" then
 		table.insert(out, { kind = "Died", playerId = event.playerId, mine = event.playerId == myId })
 	elseif t == "Respawned" then

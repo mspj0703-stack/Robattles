@@ -14,6 +14,22 @@ local profiles = {
     default = { speed = 1, gain = 0.85, distance = 68, minGap = 0.09 },
 }
 
+-- P2-B: per-cue mastering for the eleven uploaded-asset *candidates*.
+-- No Roblox SoundId is assigned here; publishing/permissions must be confirmed separately.
+local cueMix = {
+    ["sword.slash"] = { speed = 1.04, gain = 0.93 },
+    ["skill.storm.finish"] = { speed = 0.94, gain = 1.00 },
+    ["parry.success"] = { speed = 1.00, gain = 1.00 },
+    ["paint.fire"] = { speed = 1.13, gain = 0.85 },
+    ["paint.explosion"] = { speed = 0.91, gain = 0.98 },
+    ["ball.bounce"] = { speed = 1.12, gain = 0.90 },
+    ["ball.throw.charged"] = { speed = 0.98, gain = 0.96 },
+    ["bomb.explosion"] = { speed = 0.84, gain = 1.00 },
+    ["sling.fire"] = { speed = 1.17, gain = 0.88 },
+    ["sling.ult.precise"] = { speed = 1.06, gain = 0.96 },
+    ["hit.impact"] = { speed = 1.00, gain = 0.91 },
+}
+
 local function familyFor(cueName, soundName)
     if type(cueName) ~= "string" then cueName = "" end
     if string.find(cueName, "^paint%.") then return "paint" end
@@ -33,7 +49,9 @@ end
 function SfxProfiles.forCue(cueName, soundName)
     local family = familyFor(cueName, soundName)
     local def = profiles[family]
-    return { family = family, speed = def.speed, gain = def.gain,
+    local mix = type(cueName) == "string" and cueMix[cueName] or nil
+    -- Relative fine-tuning on top of the family-level sound profile.
+    return { family = family, speed = def.speed * (mix and mix.speed or 1), gain = def.gain * (mix and mix.gain or 1),
         distance = def.distance, minGap = def.minGap }
 end
 

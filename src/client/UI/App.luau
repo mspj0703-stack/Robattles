@@ -119,7 +119,9 @@ function App:resize()
 end
 function App:applyPreference(key,value)
 	if key=="shake" and not value then self.hud.shakeUntil=nil
-	elseif key=="damageNumbers" and not value then self.hud.damageUntil=nil
+    elseif key=="damageNumbers" and not value then
+        self.hud.damageUntil=nil; self.hud.takenUntil=nil
+        self.hud.damage.Visible=false; self.hud.taken.Visible=false
 	elseif key=="scale" then self:resize()
 	elseif key=="sfx" or key=="music" then
 		local group=SoundService:FindFirstChild(key=="sfx" and "RoBattlesSFX" or "RoBattlesMusic")
@@ -257,10 +259,17 @@ function App:awaitSnapshot()
 end
 function App:setSnapshot(snap,now)
 	local old=self.state.snap
+    local oldMatchId=self.state.match and self.state.match.matchId
 	local oldStatus=old and self.state:status(now)
 	local oldKey=self.selectionKey
 	if not self.state:snapshot(snap,now) then return false end
 	if old and (old.characterId~=snap.characterId or old.alive~=snap.alive) then self.hud:clearTransient() end
+    local nextMatchId=self.state.match and self.state.match.matchId
+    if type(oldMatchId)=="number" and type(nextMatchId)=="number" and oldMatchId~=nextMatchId then
+        -- Keep last-round KO/hit notices from surviving the match boundary.
+        self.hud:clearTransient()
+        self.shownKillAt=nil
+    end
 	-- Refresh the character page when the server's selection/capacity state changes (first pick, match full).
 	local mp=self.state.match and self.state.match.player
 	self.selectionKey=mp and (tostring(mp.selected)..tostring(mp.characterSelectionAllowed)) or ""
@@ -276,8 +285,13 @@ function App:onFeedback(event,now)
 	self.state:feedback(event,now)
 	if event.type=="Died" and event.playerId==Players.LocalPlayer.UserId or event.type=="Respawned" and event.playerId==Players.LocalPlayer.UserId then self.hud:clearTransient() end
 	if event.type=="Damaged" then
-		if event.attackerId==Players.LocalPlayer.UserId and self.state.preferences.damageNumbers then self.hud:showDamage(event.amount,now) end
-		if event.targetId==Players.LocalPlayer.UserId and self.state.preferences.shake then self.hud:shake(now) end
+		if event.attackerId==Players.LocalPlayer.UserId and event.targetId~=Players.LocalPlayer.UserId and self.state.preferences.damageNumbers then
+            self.hud:showDamage(event.amount,now)
+        end
+        if event.targetId==Players.LocalPlayer.UserId then
+            if self.state.preferences.damageNumbers then self.hud:showTakenDamage(event.amount,now) end
+            if self.state.preferences.shake then self.hud:shake(now) end
+        end
 	end
 	self:updateVisibility()
 end
@@ -288,7 +302,7 @@ function App:render(model,now)
 		self.shownKillAt=self.state.lastKillAt
 		if now-self.state.lastKillAt<2 then
 			local healed=self.state.lastKillHeal or 0
-			self.hud:showToast(healed>0 and string.format("KO!  +%d HP",math.floor(healed+0.5)) or "KO!",now,1)
+			self.hud:showKO(healed,now)
 		end
 	end
 	if model and self.state.snap then

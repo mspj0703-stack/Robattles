@@ -246,9 +246,11 @@ remotes:WaitForChild("Feedback").OnClientEvent:Connect(function(event)
 		elseif fx.kind == "WasParried" then
 			hud:showToast("패링당함!", now(), 1)
 		elseif fx.kind == "DamageTaken" then
-			if app.state.preferences.damageNumbers then hud:showToast(string.format("-%d", fx.amount or 0), now(), 0.5) end
-		elseif fx.kind == "HitMarker" then
-			hud:showHitMarker(now())
+			-- P3 damage feedback is rendered separately by App:onFeedback; do not overwrite status toasts.
+		elseif fx.kind == "HitMarker" and type(fx.amount) == "number" and fx.amount > 0 then
+            -- Only Damaged has a server-committed numeric amount. Swing/SwordSkill hit lists
+            -- are hints and must not produce a second or premature marker.
+            hud:showHitMarker(now())
 		end
 	end
 	-- 임시 연출(시각 전용): 최종 아트는 Assets 폴더 교체로 바꾼다.
