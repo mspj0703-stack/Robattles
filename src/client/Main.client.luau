@@ -190,6 +190,7 @@ remotes:WaitForChild("State").OnClientEvent:Connect(function(snap)
 	pcall(function()
 		local m = MatchResetModel.matchOf(snap)
 		if MatchResetModel.shouldReset(lastAnimMatch, m) then
+            effects:clear() -- P1-D: remove prior-round visual projectiles/particles only
 			charAnim:resetAll()
 			swordAnim:resetAll() -- SWORD 포함 5캐릭터 동일 경기 경계 정리
 		end

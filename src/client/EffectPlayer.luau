@@ -9,6 +9,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
 
 local Link = require(script.Parent.Link)
 local Catalog = Link.shared("Data/EffectCatalog")
@@ -22,7 +23,7 @@ local function color3(c)
 end
 
 function EffectPlayer.new(now)
-	local self = setmetatable({ _now = now, _projectiles = {}, _paintEnds = {}, _folder = nil }, EffectPlayer)
+	local self = setmetatable({ _now = now, _projectiles = {}, _paintEnds = {}, _folder = nil, _quality = "high", _assetWarnings = {} }, EffectPlayer)
 	local folder = workspace:FindFirstChild("RoBattlesEffects")
 	if folder then
 		folder:Destroy() -- 스크립트 재실행/재접속 시 이전 연출 잔여물 정리(중복 방지)
@@ -37,16 +38,35 @@ function EffectPlayer.new(now)
 	return self
 end
 
+-- Only the VFX layer is cleared: no server state, hitboxes or animation tracks change.
+-- Use at match boundary, where old projectiles must not leak into the next round.
+function EffectPlayer:clear()
+    if self._folder then
+        self._folder:ClearAllChildren()
+    end
+    table.clear(self._projectiles)
+    table.clear(self._paintEnds)
+end
+
+-- P1-D quality hook for future HUD settings. Gameplay/telegraphs are never changed.
+function EffectPlayer:setQuality(level)
+    if level == "low" or level == "medium" or level == "high" then
+        self._quality = level
+        return true
+    end
+    return false
+end
+
 function EffectPlayer:destroy()
 	if self._conn then
 		self._conn:Disconnect()
 		self._conn = nil
 	end
-	if self._folder then
-		self._folder:Destroy()
-	end
-	table.clear(self._projectiles)
-	table.clear(self._paintEnds)
+    self:clear()
+    if self._folder then
+        self._folder:Destroy()
+        self._folder = nil
+    end
 end
 
 local function characterOf(playerId)
@@ -74,10 +94,126 @@ function EffectPlayer:_sound(soundName, parent)
 	s.SoundId = def.id
 	s.Volume = def.volume or 0.5
 	s.RollOffMaxDistance = 80
-	s.SoundGroup = game:GetService("SoundService"):FindFirstChild("RoBattlesSFX") -- UI 효과음 볼륨 설정과 연동
+	s.SoundGroup = SoundService:FindFirstChild("RoBattlesSFX") -- UI 효과음 볼륨 설정과 연동
 	s.Parent = parent
 	s:Play()
 	Debris:AddItem(s, 3)
+end
+
+-- Cosmetic assets: accept Model, BasePart, Attachment or a standalone ParticleEmitter.
+-- Unsupported assets fall back to existing geometry rather than interrupting combat.
+local function visualPart(p)
+    p.Anchored = true
+    p.CanTouch = false
+    p.CanQuery = false
+    p.CanCollide = false
+    p.CastShadow = false
+end
+
+local function cosmeticChildren(object)
+    local nodes = { object }
+    for _, child in object:GetDescendants() do
+        nodes[#nodes + 1] = child
+    end
+    return nodes
+end
+
+local function isEffectAsset(object)
+    return object:IsA("Model") or object:IsA("BasePart") or object:IsA("Attachment") or object:IsA("ParticleEmitter")
+end
+
+function EffectPlayer:_warnAssetOnce(name, reason)
+    if self._assetWarnings[name] then return end
+    self._assetWarnings[name] = true
+    warn("[RoBattles][Effect] invalid asset " .. name .. ": " .. tostring(reason) .. "; using fallback")
+end
+
+-- A placed cosmetic asset has no collision/damage; all sound belongs to RoBattlesSFX.
+-- For standalone particle assets create an invisible, anchored 3D attachment anchor.
+function EffectPlayer:_spawnAsset(name, at, lifetime, projectile)
+    local source = self:_asset(name)
+    if not source then return nil, false end
+    if not isEffectAsset(source) then
+        self:_warnAssetOnce(name, source.ClassName)
+        return nil, false
+    end
+    local clone
+    local ok, owner, assetSound = pcall(function()
+        clone = source:Clone()
+        local placed = clone
+        if clone:IsA("Attachment") or clone:IsA("ParticleEmitter") then
+            local anchor = Instance.new("Part")
+            anchor.Name = "CosmeticAnchor"
+            anchor.Size = Vector3.new(0.1, 0.1, 0.1)
+            anchor.Transparency = 1
+            anchor.CFrame = at
+            visualPart(anchor)
+            local attach
+            if clone:IsA("ParticleEmitter") then
+                attach = Instance.new("Attachment")
+                attach.Parent = anchor
+                clone.Parent = attach
+            else
+                clone.Parent = anchor
+            end
+            placed = anchor
+        elseif clone:IsA("Model") then
+            if not clone:FindFirstChildWhichIsA("BasePart", true) then
+                error("Model has no BasePart")
+            end
+            clone:PivotTo(at)
+        else
+            clone.CFrame = at
+        end
+        local hasSound = false
+        local longestParticle = 0
+        for _, obj in cosmeticChildren(placed) do
+            if obj:IsA("BasePart") then
+                visualPart(obj)
+            elseif obj:IsA("Sound") and obj.SoundId ~= "" then
+                obj.SoundGroup = SoundService:FindFirstChild("RoBattlesSFX")
+                hasSound = true
+            elseif obj:IsA("ParticleEmitter") then
+                longestParticle = math.max(longestParticle, obj.Lifetime.Max)
+            end
+        end
+        placed.Parent = self._folder
+        if projectile then
+            -- Projectile visuals can carry authored looping particles and flight sounds.
+            -- For disabled emitters, emit a small launch burst so they are not invisible.
+            for _, obj in cosmeticChildren(placed) do
+                if obj:IsA("ParticleEmitter") and not obj.Enabled then
+                    local count = obj:GetAttribute("BurstCount")
+                    if type(count) ~= "number" then count = 8 end
+                    local scale = self._quality == "low" and 0.4 or (self._quality == "medium" and 0.7 or 1)
+                    obj:Emit(math.clamp(math.floor(count * scale + 0.5), 1, 32))
+                elseif obj:IsA("Sound") and obj.SoundId ~= "" then
+                    obj:Play()
+                end
+            end
+        else
+            for _, obj in cosmeticChildren(placed) do
+                if obj:IsA("ParticleEmitter") then
+                    local count = obj:GetAttribute("BurstCount")
+                    if type(count) ~= "number" then count = 10 end
+                    local scale = self._quality == "low" and 0.4 or (self._quality == "medium" and 0.7 or 1)
+                    obj.Enabled = false
+                    obj:Emit(math.clamp(math.floor(count * scale + 0.5), 1, 48))
+                elseif obj:IsA("Sound") and obj.SoundId ~= "" then
+                    obj:Play()
+                end
+            end
+            -- Allow already-emitted particles time to die; avoid indefinitely living assets.
+            Debris:AddItem(placed, math.max(lifetime + 0.3, math.min(longestParticle + 0.1, 5)))
+        end
+        return placed, hasSound
+    end)
+    if not ok then
+        if clone then clone:Destroy() end
+        self:_warnAssetOnce(name, owner)
+        return nil, false
+    end
+    return owner, assetSound
 end
 
 local function ghostPart(size, cframe, color, transparency)
@@ -148,8 +284,9 @@ function EffectPlayer:_hitImpact(cue, def, color)
 	local camera = workspace.CurrentCamera
 	local right = camera and camera.CFrame.RightVector or Vector3.xAxis
 	local up = camera and camera.CFrame.UpVector or Vector3.yAxis
-	for i = 1, 4 do
-		local angle = (i - 1) * math.pi / 2 + math.pi / 4
+    local sparkCount = self._quality == "low" and 2 or 4
+    for i = 1, sparkCount do
+        local angle = (i - 1) * 2 * math.pi / sparkCount + math.pi / 4
 		local direction = right * math.cos(angle) + up * math.sin(angle)
 		local from = point + direction * 0.22
 		local to = point + direction * (0.48 + math.min(def.size, 4) * 0.1)
@@ -427,7 +564,7 @@ end
 function EffectPlayer:_p1cRing(center, radius, color, life, horizontal, mine)
     if not center or not visibleAt(center, mine, 105) then return end
     local nearby = visibleAt(center, mine, 55)
-    local count = nearby and 9 or 5
+    local count = self._quality == "low" and 4 or (self._quality == "medium" and (nearby and 6 or 4) or (nearby and 9 or 5))
     local cam = workspace.CurrentCamera
     local right = (cam and cam.CFrame.RightVector) or Vector3.xAxis
     local up = (cam and cam.CFrame.UpVector) or Vector3.yAxis
@@ -455,7 +592,7 @@ function EffectPlayer:_p1cPop(point, color, extent, lifetime, mine, horizontal)
     core.Shape = Enum.PartType.Ball
     core.Parent = self._folder
     self:_fade(core, math.min(lifetime, 0.22), Vector3.one * 0.08)
-    local count = near and 6 or 3
+    local count = self._quality == "low" and 2 or (self._quality == "medium" and (near and 4 or 2) or (near and 6 or 3))
     local camera = workspace.CurrentCamera
     local right = (camera and camera.CFrame.RightVector) or Vector3.xAxis
     local up = (camera and camera.CFrame.UpVector) or Vector3.yAxis
@@ -641,8 +778,9 @@ function EffectPlayer:play(cue)
 end
 
 function EffectPlayer:_play(cue)
-	local name = cue.cue
-	if name == "projectile.end" then
+    if type(cue) ~= "table" or type(cue.cue) ~= "string" then return end
+    local name = cue.cue
+    if name == "projectile.end" then
         local p = self._projectiles[cue.projectileId]
         if p then
             -- EffectsModel 의 범용 Ended 뒤에는 paint.splat 가 따라올 수 있다.
@@ -680,38 +818,42 @@ function EffectPlayer:_play(cue)
 	local root = (cue.playerId and rootOf(cue.playerId)) or (cue.targetId and rootOf(cue.targetId))
 	local override = self:_asset(name)
 
-	if def.style == "Projectile" then
-		local part = override and override:Clone() or ghostPart(Vector3.one * def.size * 2, CFrame.new(cue.pos.X, cue.pos.Y, cue.pos.Z), col, 0)
-		if part:IsA("Model") then
-			part = part.PrimaryPart or part:FindFirstChildWhichIsA("BasePart")
-		end
-		if part:IsA("Part") then
-            -- 폭탄은 큐브/오브젝트, 고무공은 구체, 페인트/사슬탄은 작은 탄환.
+    if def.style == "Projectile" then
+        local point = cuePosition(cue)
+        local id = cue.projectileId
+        if not point or id == nil then return end
+        local previous = self._projectiles[id]
+        if previous then previous.part:Destroy() end
+        local part = self:_spawnAsset(name, CFrame.new(point), def.lifetime, true)
+        if not part then
+            part = ghostPart(Vector3.one * def.size * 2, CFrame.new(point), col, 0)
             if name == "bomb.projectile" or name == "paint.bomb.projectile" then
                 part.Shape = Enum.PartType.Block
             else
                 part.Shape = Enum.PartType.Ball
             end
+            part.Parent = self._folder
         end
-		part.Parent = self._folder
-		self._projectiles[cue.projectileId] = { cue = cue, part = part }
-		return
-	end
+        -- Keep the entire Model, including every visible child, for future PivotTo updates.
+        -- No code is allowed to modify actual projectile velocity, collision or hitbox.
+        self._projectiles[id] = { cue = cue, part = part, color = col }
+        return
+    end
 
-	if override and def.style ~= "Highlight" then
-		local clone = override:Clone()
-		local at = root and root.CFrame or (cue.pos and CFrame.new(cue.pos.X, cue.pos.Y, cue.pos.Z)) or CFrame.new()
-		if clone:IsA("Model") then
-			clone:PivotTo(at)
-		elseif clone:IsA("BasePart") then
-			clone.CFrame = at
-			clone.Anchored = true
-		end
-		clone.Parent = self._folder
-		Debris:AddItem(clone, def.lifetime + 0.5)
-		self:_sound(def.sound, root or clone)
-		return
-	end
+    if override and def.style ~= "Highlight" then
+        -- World hit/explosion decals must use authoritative event position rather than the caster.
+        local point = cuePosition(cue)
+        local at = point and CFrame.new(point) or (root and root.CFrame) or CFrame.new()
+        local placed, hasSound = self:_spawnAsset(name, at, def.lifetime, false)
+        if placed then
+            if not hasSound then
+                local soundParent = placed:IsA("BasePart") and placed
+                    or placed:FindFirstChildWhichIsA("BasePart", true) or root
+                self:_sound(def.sound, soundParent)
+            end
+            return
+        end
+    end
 
 	-- P1-C: 기존 asset override 우선, 그다음 네 캐릭터 전용 도형 fallback.
 	if self:_playP1C(cue, def, root, col) then
@@ -805,7 +947,7 @@ function EffectPlayer:_step()
 			self._projectiles[id] = nil
 		else
             local nextPos = Vector3.new(pos.X, pos.Y, pos.Z)
-            if p.lastPos and p.part:IsA("BasePart") then
+            if p.lastPos and self._quality ~= "low" then
                 local since = t - (p.lastTrailAt or -math.huge)
                 local category = p.cue.cue
                 -- 기존 서버 위치 보간에만 장식 트레일을 붙이고 실제 궤도는 유지한다.
@@ -816,12 +958,16 @@ function EffectPlayer:_step()
                     if distance > 0.18 and distance < 8 then
                         emitLine(self._folder, self, p.lastPos, nextPos,
                             category == "ball.projectile" and 0.12 or 0.075,
-                            p.part.Color, 0.12, 0.32)
+                            p.color or Color3.new(1, 1, 1), 0.12, 0.32)
                     end
                     p.lastTrailAt = t
                 end
             end
-            if p.part:IsA("BasePart") then p.part.Position = nextPos end
+            if p.part:IsA("Model") then
+                p.part:PivotTo(CFrame.new(nextPos))
+            elseif p.part:IsA("BasePart") then
+                p.part.Position = nextPos
+            end
             p.lastPos = nextPos
         end
     end

@@ -45,6 +45,8 @@ def test_no_gameplay_or_animation_source_changed():
         'src/client/EffectPlayer.luau',
         'src/shared/Data/EffectCatalog.luau',
         'tests_py/test_vfx_p1a_contract.py',
+        'tests_py/test_vfx_p1d_contract.py',
+        'src/client/Main.client.luau', # P1-D cosmetic lifetime reset only
     } for x in changed), changed
     assert not any(x.startswith(('src/server/', 'src/shared/Combat/', 'src/client/CharacterAnimator', 'src/client/SwordAnimator')) for x in changed)
 
@@ -127,7 +129,8 @@ def test_p1b_effects_visual_only_and_cleanup():
 
 def test_p1b_scope_changed_only_vfx_and_tests():
     changed = subprocess.check_output(['git', 'diff', '--name-only', BASE], cwd=ROOT, text=True).splitlines()
-    assert set(changed) <= {'src/client/EffectPlayer.luau', 'src/shared/Data/EffectCatalog.luau', 'tests_py/test_vfx_p1a_contract.py'}
+    assert set(changed) <= {'src/client/EffectPlayer.luau', 'src/shared/Data/EffectCatalog.luau', 'tests_py/test_vfx_p1a_contract.py',
+        'tests_py/test_vfx_p1d_contract.py', 'src/client/Main.client.luau'}
 
 # P1-C: client-only animation-independent VFX variants for four Alpha characters.
 
@@ -190,5 +193,7 @@ def test_p1c_change_scope_and_cue_contract():
         'src/client/EffectPlayer.luau',
         'src/shared/Data/EffectCatalog.luau',
         'tests_py/test_vfx_p1a_contract.py',
+        'tests_py/test_vfx_p1d_contract.py',
+        'src/client/Main.client.luau', # P1-D one-line visual cleanup at match reset
     }, changed
     assert MODEL.read_text() == baseline('src/client/Logic/EffectsModel.luau')
