@@ -159,4 +159,84 @@ test("stale first-spawn state disables submission until server recovers",functio
 	uxRender(v,"WAITING","Selected",true); assert(v.selectButton.Active); v:destroy()
 end)
 test("destroy restores core list and disconnects owned events",function() app:destroy();assert(app.gui.Destroyed);assert(Mock.services.StarterGui.enabled);assert(Mock.services.ContextActionService.bound.RoBattlesUIModal==nil) end)
+-- P4 / P4-B responsive profiles (layout math only; real rendering, safe area and touch remain Studio-only).
+local Responsive=require("../client/UI/Responsive")
+local function sized(w,h)
+	local v=uxApp()
+	v.bounds.AbsoluteSize={X=w,Y=h}; v:resize()
+	return v
+end
+local function inside(obj,ref)
+	local p,s=obj.Position,obj.Size
+	return p.X.Offset>=0 and p.Y.Offset>=0 and p.X.Offset+s.X.Offset<=ref.X and p.Y.Offset+s.Y.Offset<=ref.Y
+end
+test("responsive profile selection boundaries (P4/P4-B)",function()
+	local cases={{1280,720,"desktop"},{1150,680,"desktop"},{1149,720,"compact"},{1280,679,"compact"},{1024,576,"compact"},
+		{720,1180,"portrait"},{800,896,"compact"},{800,897,"portrait"},{0,720,"desktop"},{1280,0,"desktop"}}
+	for _,c in cases do assert(Responsive.choose(c[1],c[2])==c[3],c[1].."x"..c[2].." expected "..c[3].." got "..Responsive.choose(c[1],c[2])) end
+end)
+test("each profile sets its reference canvas and fits the window",function()
+	for _,c in {{1280,720,"desktop"},{1024,576,"compact"},{1100,650,"compact"},{720,1180,"portrait"},{390,844,"portrait"}} do
+		local v=sized(c[1],c[2]); local ref=Responsive.References[c[3]]
+		assert(v.layoutProfile==c[3])
+		assert(v.canvas.Size.X.Offset==ref.X and v.canvas.Size.Y.Offset==ref.Y)
+		assert(ref.X*v.scale.Scale<=c[1]+1e-6 and ref.Y*v.scale.Scale<=c[2]+1e-6,"canvas overflows "..c[1].."x"..c[2])
+		assert(v.scale.Scale>0); v:destroy()
+	end
+end)
+test("compact and portrait keep menu and character pages inside the canvas",function()
+	for _,c in {{1024,576,"compact"},{720,1180,"portrait"}} do
+		local v=sized(c[1],c[2]); local ref=Responsive.References[c[3]]
+		assert(inside(v.menu,ref),c[3].." menu outside canvas")
+		assert(inside(v.characterPage,ref),c[3].." character page outside canvas")
+		for _,name in {"PLAY","CHARACTERS","HOW TO PLAY","SETTINGS"} do assert(v.menu:FindFirstChild(name),"menu button "..name.." missing") end
+		v:destroy()
+	end
+end)
+test("compact and portrait text never drops below the readable minimum",function()
+	for _,c in {{1024,576},{720,1180}} do
+		local v=sized(c[1],c[2])
+		for _,obj in v.canvas:GetDescendants() do
+			if obj:IsA("TextLabel") or obj:IsA("TextButton") then assert(obj.TextSize>=11,obj.Name.." TextSize "..tostring(obj.TextSize)) end
+		end
+		v:destroy()
+	end
+end)
+test("switching profiles round-trips geometry back to the exact desktop layout",function()
+	local v=sized(1280,720)
+	local before={}
+	for obj,g in v.baseGeometry do before[obj]={g.position,g.size,g.textSize} end
+	for _,c in {{1024,576},{720,1180},{1280,720}} do v.bounds.AbsoluteSize={X=c[1],Y=c[2]}; v:resize() end
+	assert(v.layoutProfile=="desktop")
+	for obj,g in before do
+		assert(obj.Position==g[1] and obj.Size==g[2],obj.Name.." geometry not restored")
+		if g[3] then assert(obj.TextSize==g[3],obj.Name.." text size not restored") end
+	end
+	v:destroy()
+end)
+test("zero or invalid bounds never change the active layout",function()
+	local v=sized(1024,576); local scale=v.scale.Scale
+	v.bounds.AbsoluteSize={X=0,Y=0}; v:resize()
+	assert(v.layoutProfile=="compact" and v.scale.Scale==scale)
+	v:destroy()
+end)
+test("player scale preference is clamped to 0.75..1.25 of the fitted scale",function()
+	local v=sized(1280,720); local ref=Responsive.References.desktop
+	local fit=math.min((1280-16)/ref.X,(720-16)/ref.Y)
+	v.state.preferences.scale=5; v:resize(); assert(math.abs(v.scale.Scale-fit*1.25)<1e-9)
+	v.state.preferences.scale=0.1; v:resize(); assert(math.abs(v.scale.Scale-fit*0.75)<1e-9)
+	v:destroy()
+end)
+test("mock Instance API matches Roblox semantics used by the UI",function()
+	local f=Mock.Instance.new("Frame"); local l=Mock.Instance.new("TextLabel"); local st=Mock.Instance.new("UIStroke")
+	l.Parent=f; st.Parent=l
+	assert(f:FindFirstChildOfClass("TextLabel")==l and f:FindFirstChildOfClass("UIStroke")==nil and l:FindFirstChildOfClass("UIStroke")==st)
+	assert(f:FindFirstChildOfClass("GuiObject")==nil,"FindFirstChildOfClass must not follow inheritance")
+	assert(f:FindFirstChildWhichIsA("GuiObject")==l and f:FindFirstChildWhichIsA("UIComponent")==nil and f:FindFirstChildWhichIsA("UIComponent",true)==st)
+	local d=f:GetDescendants(); assert(#d==2 and d[1]==l and d[2]==st)
+	assert(l:IsA("GuiObject") and l:IsA("GuiBase2d") and l:IsA("Instance") and not l:IsA("GuiButton") and Mock.Instance.new("TextButton"):IsA("GuiButton"))
+	l.Parent=nil; assert(#f:GetChildren()==0,"reparent must detach from old parent")
+	st:Destroy(); assert(st.Parent==nil and #l:GetChildren()==0)
+	l:SetAttribute("a",3); assert(l:GetAttribute("a")==3 and l:GetAttribute("b")==nil)
+end)
 print("GUI mock: "..passed.." passed / 0 failed (NOT Studio)")
