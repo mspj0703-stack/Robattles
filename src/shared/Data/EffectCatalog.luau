@@ -1,5 +1,5 @@
 --!strict
--- 임시 전투 연출 카탈로그. 최종 아트가 아니다: 아래 `style` 은 EffectPlayer 가 코드로 만드는 임시 도형이다.
+-- 전투 연출 카탈로그. P1-A 공통 Arc/Burst/명중 피드백 개선, 추후 개별 에셋 교체 가능.
 -- 교체 방법(코드 수정 불필요): ReplicatedStorage.RoBattles.Assets.Effects 에 같은 cue 이름(예: "sword.slash")의 Model/Part/ParticleEmitter 를 넣으면
 -- 그것을 복제해 쓴다. 사운드는 Sounds 의 id 만 바꾸면 된다. 무기는 Assets.Weapons.<CharacterId> (WeaponModels 참고).
 -- ASSUMPTION A56: 사운드 id 는 Roblox 클라이언트 내장(rbxasset://) 임시 파일 이름이며 Studio 에서 재생 여부를 확인하지 않았다(무음으로 실패할 수 있음).
@@ -37,7 +37,7 @@ EffectCatalog.Cues = {
 	["parry.start"] = { style = "Ring", color = { 110, 175, 255 }, size = 5, lifetime = 0.4, sound = "parry" },
 	["parry.success"] = { style = "Burst", color = { 255, 230, 110 }, size = 6, lifetime = 0.3, sound = "parry_hit" },
 	["parry.blocked"] = { style = "Burst", color = { 255, 120, 80 }, size = 4, lifetime = 0.25 },
-	["hit.impact"] = { style = "Burst", color = { 255, 90, 90 }, size = 3, lifetime = 0.2, sound = "hit" },
+	["hit.impact"] = { style = "Burst", color = { 255, 190, 105 }, size = 3, lifetime = 0.16, sound = "hit" },
 	["hit.flash"] = { style = "Highlight", color = { 255, 255, 255 }, size = 0, lifetime = 0.12 },
 	["dodge.afterimage"] = { style = "Afterimage", color = { 120, 200, 255 }, size = 0, lifetime = 0.35, count = 4, sound = "dodge" },
 	["paint.fire"] = { style = "Muzzle", color = { 255, 140, 40 }, size = 1.2, lifetime = 0.08, sound = "paint_fire" },
