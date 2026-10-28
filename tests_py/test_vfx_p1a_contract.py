@@ -128,3 +128,67 @@ def test_p1b_effects_visual_only_and_cleanup():
 def test_p1b_scope_changed_only_vfx_and_tests():
     changed = subprocess.check_output(['git', 'diff', '--name-only', BASE], cwd=ROOT, text=True).splitlines()
     assert set(changed) <= {'src/client/EffectPlayer.luau', 'src/shared/Data/EffectCatalog.luau', 'tests_py/test_vfx_p1a_contract.py'}
+
+# P1-C: client-only animation-independent VFX variants for four Alpha characters.
+
+def test_p1c_four_character_cues_have_dedicated_handlers():
+    b = PLAYER.read_text()
+    assert 'function EffectPlayer:_playP1C' in b
+    for prefix in ('"paint."', '"ball."', '"bomb."', '"sling."'):
+        assert prefix in b
+    assert 'self:_playP1C(cue, def, root, col)' in b
+
+
+def test_p1c_paint_spots_are_not_generated_for_other_projectiles():
+    b = PLAYER.read_text()
+    assert 'self._paintEnds[cue.projectileId]' in b
+    assert 'string.sub(p.cue.cue, 1, 6) == "paint."' in b
+    assert 'if not ended or not ended.paint then return end' in b
+    assert 'if name == "paint.splat"' in b
+    assert 'self._paintEnds[id] = nil' in b
+
+
+def test_p1c_ball_and_bomb_events_are_visually_distinct():
+    b = PLAYER.read_text()
+    for name in ('ball.bounce','ball.cyclone.start','ball.dash','bomb.explosion',
+                 'bomb.detonate','bomb.bigbang','paint.explosion'):
+        assert f'name == "{name}"' in b
+    assert 'cue.radius' in b
+    assert 'self:_p1cRing(point, cap * 0.94' in b
+
+
+def test_p1c_sling_marks_and_ultimate_not_misrepresented():
+    b = PLAYER.read_text()
+    for name in ('sling.snare.mark','sling.mark','sling.mark.proc',
+                 'sling.ult.windup','sling.ult.fire','sling.ult.hit','sling.ult.precise'):
+        assert f'"{name}"' in b
+    assert 'if not self:_p1cBeam(cue, def, color) then return false end' in b
+    assert 'if not a or not b then return false end' in b
+
+
+def test_p1c_projectiles_preserve_original_movement_and_bound_lod():
+    b = PLAYER.read_text()
+    assert 'EffectsModel.ballPosition(p.cue, t' in b
+    assert 'EffectsModel.projectilePosition(p.cue, t)' in b
+    assert 'visibleAt(nextPos, p.cue.mine, 62)' in b
+    assert 'if since >= 0.085' in b
+    assert 'self:_fade(' in b and 'Debris:AddItem' in b
+
+
+def test_p1c_no_attacks_or_real_collisions_from_visuals():
+    b = PLAYER.read_text()
+    for flag in ('p.CanCollide = false', 'p.CanTouch = false',
+                 'p.CanQuery = false', 'p.Anchored = true'):
+        assert flag in b
+    assert 'function EffectPlayer:_p1cSound' in b
+    assert 'self:_p1cSound(def.sound' in b
+
+
+def test_p1c_change_scope_and_cue_contract():
+    changed = subprocess.check_output(['git', 'diff', '--name-only', BASE], cwd=ROOT, text=True).splitlines()
+    assert set(changed) <= {
+        'src/client/EffectPlayer.luau',
+        'src/shared/Data/EffectCatalog.luau',
+        'tests_py/test_vfx_p1a_contract.py',
+    }, changed
+    assert MODEL.read_text() == baseline('src/client/Logic/EffectsModel.luau')

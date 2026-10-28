@@ -22,7 +22,7 @@ local function color3(c)
 end
 
 function EffectPlayer.new(now)
-	local self = setmetatable({ _now = now, _projectiles = {}, _folder = nil }, EffectPlayer)
+	local self = setmetatable({ _now = now, _projectiles = {}, _paintEnds = {}, _folder = nil }, EffectPlayer)
 	local folder = workspace:FindFirstChild("RoBattlesEffects")
 	if folder then
 		folder:Destroy() -- 스크립트 재실행/재접속 시 이전 연출 잔여물 정리(중복 방지)
@@ -46,6 +46,7 @@ function EffectPlayer:destroy()
 		self._folder:Destroy()
 	end
 	table.clear(self._projectiles)
+	table.clear(self._paintEnds)
 end
 
 local function characterOf(playerId)
@@ -398,6 +399,203 @@ function EffectPlayer:_playSword(cue, def, root, color)
     return true
 end
 
+-- 월드 좌표에서 재생되는 폭발/반사음은 캐릭터 루트가 없어도 들리게 한다.
+function EffectPlayer:_p1cSound(soundName, root, point)
+    if not soundName then return end
+    if root then
+        self:_sound(soundName, root)
+    elseif point then
+        local anchor = ghostPart(Vector3.one * 0.1, CFrame.new(point), Color3.new(1, 1, 1), 1)
+        anchor.Parent = self._folder
+        self:_sound(soundName, anchor)
+        Debris:AddItem(anchor, 3.1)
+    end
+end
+
+-- P1-C: PAINTBALL, SUPERBALL, TIMEBOMB, SLINGSHOT cue 전용 연출.
+-- 서버에서 넘어온 위치/반경/명중 이벤트만 사용하며 실제 피해·피격·투사체 궤적을 바꾸지 않는다.
+local function pointFor(cue, root, offset)
+    local fromEvent = cuePosition(cue)
+    if fromEvent then return fromEvent end
+    if root then
+        return root.Position + root.CFrame.LookVector * (offset or 0) + Vector3.yAxis * 0.6
+    end
+    return nil
+end
+
+-- 3D 공간의 얇은 고리. 수평 링/카메라 방향 링은 장식만 표시한다.
+function EffectPlayer:_p1cRing(center, radius, color, life, horizontal, mine)
+    if not center or not visibleAt(center, mine, 105) then return end
+    local nearby = visibleAt(center, mine, 55)
+    local count = nearby and 9 or 5
+    local cam = workspace.CurrentCamera
+    local right = (cam and cam.CFrame.RightVector) or Vector3.xAxis
+    local up = (cam and cam.CFrame.UpVector) or Vector3.yAxis
+    radius = math.clamp(radius, 0.2, 14)
+    life = math.clamp(life, 0.05, 0.5)
+    for i = 1, count do
+        local a = 2 * math.pi * (i - 1) / count
+        local b = 2 * math.pi * i / count
+        local function sample(t)
+            if horizontal then
+                return center + Vector3.new(math.cos(t) * radius, 0.08, math.sin(t) * radius)
+            end
+            return center + right * (math.cos(t) * radius) + up * (math.sin(t) * radius)
+        end
+        emitLine(self._folder, self, sample(a), sample(b), nearby and 0.11 or 0.09, color, life, 0.3)
+    end
+end
+
+-- 간결한 만화풍 파열. 낙하/폭발 이펙트 반경은 서버가 준 한계를 넘지 않는다.
+function EffectPlayer:_p1cPop(point, color, extent, lifetime, mine, horizontal)
+    if not point or not visibleAt(point, mine, 105) then return end
+    extent = math.clamp(extent, 0.3, 13)
+    local near = visibleAt(point, mine, 55)
+    local core = ghostPart(Vector3.one * math.min(0.8, extent * 0.35), CFrame.new(point), color, 0.16)
+    core.Shape = Enum.PartType.Ball
+    core.Parent = self._folder
+    self:_fade(core, math.min(lifetime, 0.22), Vector3.one * 0.08)
+    local count = near and 6 or 3
+    local camera = workspace.CurrentCamera
+    local right = (camera and camera.CFrame.RightVector) or Vector3.xAxis
+    local up = (camera and camera.CFrame.UpVector) or Vector3.yAxis
+    for i = 1, count do
+        local angle = (i - 1) * 2 * math.pi / count + 0.3
+        local direction = horizontal and Vector3.new(math.cos(angle), 0, math.sin(angle))
+            or right * math.cos(angle) + up * math.sin(angle)
+        emitLine(self._folder, self,
+            point + direction * math.min(extent * 0.16, 0.5),
+            point + direction * (extent * (0.47 + (i % 2) * 0.1)),
+            0.095, color, math.min(lifetime, 0.32), 0.2)
+    end
+end
+
+-- 탄성 이펙트는 물리 이동이 아니라 충돌 순간의 시각적 강조.
+function EffectPlayer:_p1cStreak(cue, def, root, color)
+    if not root or not visibleAt(root.Position, cue.mine, 105) then return end
+    local dir = root.CFrame.LookVector
+    if type(cue.dir) == "table" and type(cue.dir.X) == "number" and type(cue.dir.Z) == "number" then
+        local candidate = Vector3.new(cue.dir.X, 0, cue.dir.Z)
+        if candidate.Magnitude > 0.05 then dir = candidate.Unit end
+    end
+    local count = visibleAt(root.Position, cue.mine, 55) and 4 or 2
+    local distance = math.clamp(type(cue.distance) == "number" and cue.distance or 3.2, 1.5, 11)
+    local life = math.min(def.lifetime, 0.30)
+    for i = 1, count do
+        local at = root.Position - dir * distance * (i / (count + 1))
+        local side = root.CFrame.RightVector * (if i % 2 == 0 then 0.46 else -0.46)
+        emitLine(self._folder, self, at + side + Vector3.yAxis * 1.1,
+            at - dir * 0.85 + side + Vector3.yAxis * 0.65,
+            0.09, color, life * (1 - i / (count + 2)), 0.22)
+    end
+end
+
+-- Beam: 서버 원점~끝점이 있을 때만 표시. 미확인 위치를 임의로 생성하지 않는다.
+function EffectPlayer:_p1cBeam(cue, def, color)
+    local a = cue.origin and cuePosition({ pos = cue.origin })
+    local b = cue.tip and cuePosition({ pos = cue.tip })
+    if not a or not b then return false end
+    if not visibleAt(a, cue.mine, 110) and not visibleAt(b, cue.mine, 110) then return true end
+    local length = (b - a).Magnitude
+    if length < 0.05 then return true end
+    local life = math.min(def.lifetime, 0.28)
+    emitLine(self._folder, self, a, b, math.clamp(def.size * 0.18, 0.08, 0.30), color, life, 0.12)
+    if visibleAt(a, cue.mine, 55) then
+        emitLine(self._folder, self, a, b, 0.06, Color3.fromRGB(255, 255, 240), life * 0.78, 0.1)
+    end
+    return true
+end
+
+function EffectPlayer:_playP1C(cue, def, root, color)
+    local name = cue.cue
+    if string.sub(name, 1, 6) == "paint." then
+        local point = pointFor(cue, root, 1.8)
+        if name == "paint.splat" then
+            -- 충돌 표면 법선이 없는 이벤트: 위치를 중심으로 작고 얇은 페인트 자국만 표시.
+            self:_p1cRing(point, def.size * 0.33, color, math.min(def.lifetime, 0.45), true, cue.mine)
+            self:_p1cPop(point, color, 1.3, 0.22, cue.mine, true)
+        elseif name == "paint.explosion" then
+            local reach = type(cue.radius) == "number" and cue.radius > 0 and cue.radius or def.size * 0.5
+            local cap = math.max(0.3, math.min(reach, 13))
+            self:_p1cPop(point, color, cap * 0.85, def.lifetime, cue.mine, true)
+            self:_p1cRing(point, cap * 0.88, color, math.min(def.lifetime, 0.4), true, cue.mine)
+        elseif name == "paint.ult.beam" then
+            if not self:_p1cBeam(cue, def, color) then return false end
+        elseif name == "paint.slide" then
+            self:_p1cStreak(cue, def, root, color)
+        elseif name == "paint.ult.windup" or name == "paint.ult.end" then
+            self:_p1cRing(point, name == "paint.ult.windup" and 1.65 or 1.0, color, def.lifetime, false, cue.mine)
+        elseif name == "paint.reload.proc" then
+            self:_p1cPop(point, color, 0.85, def.lifetime, cue.mine, false)
+        else
+            self:_p1cPop(point, color, math.clamp(def.size * 0.75, 0.4, 1.65), def.lifetime, cue.mine, false)
+        end
+    elseif string.sub(name, 1, 5) == "ball." then
+        local point = pointFor(cue, root, 1.45)
+        if name == "ball.bounce" then
+            self:_p1cRing(point, 0.7, color, 0.17, false, cue.mine)
+            self:_p1cPop(point, color, 0.8, 0.16, cue.mine, false)
+        elseif name == "ball.dash" then
+            self:_p1cStreak(cue, def, root, color)
+        elseif name == "ball.recall" or name == "ball.charge" or name == "ball.cyclone.start" or name == "ball.cyclone.end" then
+            self:_p1cRing(point, math.min(2.2, def.size * 0.21), color, math.min(def.lifetime, 0.35), false, cue.mine)
+        elseif name == "ball.trick" or name == "ball.scatter" then
+            self:_p1cPop(point, color, math.min(def.size * 0.45, 1.8), def.lifetime, cue.mine, false)
+        else
+            self:_p1cPop(point, color, math.min(1.4, def.size * 0.7), def.lifetime, cue.mine, false)
+        end
+    elseif string.sub(name, 1, 5) == "bomb." then
+        local point = pointFor(cue, root, 1.5)
+        if name == "bomb.explosion" then
+            local reach = type(cue.radius) == "number" and cue.radius > 0 and cue.radius or def.size * 0.5
+            local cap = math.max(0.3, math.min(reach, 13))
+            self:_p1cPop(point, color, cap * 0.6, math.min(def.lifetime, 0.38), cue.mine, true)
+            self:_p1cRing(point, cap * 0.94, color, math.min(def.lifetime, 0.38), true, cue.mine)
+        elseif name == "bomb.guard" then
+            self:_p1cRing(point, math.min(2.4, def.size * 0.25), color, def.lifetime, false, cue.mine)
+        elseif name == "bomb.jump" then
+            self:_p1cPop(point, color, 1.65, 0.2, cue.mine, true)
+        elseif name == "bomb.detonate" or name == "bomb.bigbang" then
+            -- 이 cue 는 기폭 명령/준비 단계다. 실제 피해 폭발은 bomb.explosion 에서만 표현.
+            self:_p1cRing(point, 0.85, color, math.min(def.lifetime, 0.22), false, cue.mine)
+        else
+            self:_p1cPop(point, color, math.min(def.size * 0.55, 1.4), def.lifetime, cue.mine, false)
+        end
+    elseif string.sub(name, 1, 6) == "sling." then
+        local point = pointFor(cue, root, 1.35)
+        local target = cue.targetId and rootOf(cue.targetId)
+        if target then point = target.Position + Vector3.yAxis * 0.7 end
+        if name == "sling.ult.fire" then
+            if not self:_p1cBeam(cue, def, color) then return false end
+        elseif name == "sling.snare.mark" or name == "sling.mark" or name == "sling.ult.windup" or name == "sling.ult.end" then
+            local r = name == "sling.ult.windup" and 1.3 or 0.9
+            self:_p1cRing(point, r, color, math.min(def.lifetime, 0.35), false, cue.mine)
+        elseif name == "sling.ult.hit" or name == "sling.ult.precise" or name == "sling.mark.proc" then
+            self:_p1cPop(point, color, name == "sling.ult.precise" and 2.0 or 1.1, def.lifetime, cue.mine, false)
+        elseif name == "sling.backstep" then
+            self:_p1cStreak(cue, def, root, color)
+        elseif name == "sling.charge" then
+            self:_p1cRing(point, 0.65, color, def.lifetime, false, cue.mine)
+        else
+            -- 작은 Y자 탄성 발사 이펙트. 탄의 실제 방향/위치는 기존 서버 보간을 유지.
+            if point and root and visibleAt(point, cue.mine, 105) then
+                local forward = root.CFrame.LookVector
+                local right = root.CFrame.RightVector
+                emitLine(self._folder, self, point - right * 0.25, point + forward * 0.75,
+                    0.07, color, math.min(def.lifetime, 0.16), 0.15)
+                emitLine(self._folder, self, point + right * 0.25, point + forward * 0.75,
+                    0.07, color, math.min(def.lifetime, 0.16), 0.15)
+            else
+                self:_p1cPop(point, color, 0.8, def.lifetime, cue.mine, false)
+            end
+        end
+    else
+        return false
+    end
+    self:_p1cSound(def.sound, root, pointFor(cue, root, 1.5))
+    return true
+end
+
 -- 폭발/강타의 기존 거대 사각/구형 도형을 작은 섬광 + 짧은 파편으로 대체한다.
 -- radius 가 전달된 폭발은 서버가 알려준 반경 안에서만 보여야 한다.
 function EffectPlayer:_burst(cue, def, fallbackRoot, color)
@@ -445,13 +643,24 @@ end
 function EffectPlayer:_play(cue)
 	local name = cue.cue
 	if name == "projectile.end" then
-		local p = self._projectiles[cue.projectileId]
-		if p then
-			p.part:Destroy()
-			self._projectiles[cue.projectileId] = nil
-		end
-		return
-	end
+        local p = self._projectiles[cue.projectileId]
+        if p then
+            -- EffectsModel 의 범용 Ended 뒤에는 paint.splat 가 따라올 수 있다.
+            -- 원래 탄이 페인트였는지 확인한 뒤에만 착탄 페인트를 허용한다.
+            self._paintEnds[cue.projectileId] = {
+                paint = string.sub(p.cue.cue, 1, 6) == "paint.",
+                endedAt = self._now(),
+            }
+            p.part:Destroy()
+            self._projectiles[cue.projectileId] = nil
+        end
+        return
+    end
+    if name == "paint.splat" and cue.projectileId ~= nil then
+        local ended = self._paintEnds[cue.projectileId]
+        self._paintEnds[cue.projectileId] = nil
+        if not ended or not ended.paint then return end
+    end
 	if name == "ball.update" then -- 튕김/모드 전환: 서버가 준 새 기준점으로 교체(이미 사라진 볼이면 무시)
 		local p = self._projectiles[cue.projectileId]
 		if p then
@@ -476,7 +685,14 @@ function EffectPlayer:_play(cue)
 		if part:IsA("Model") then
 			part = part.PrimaryPart or part:FindFirstChildWhichIsA("BasePart")
 		end
-		part.Shape = part:IsA("Part") and Enum.PartType.Ball or part.Shape
+		if part:IsA("Part") then
+            -- 폭탄은 큐브/오브젝트, 고무공은 구체, 페인트/사슬탄은 작은 탄환.
+            if name == "bomb.projectile" or name == "paint.bomb.projectile" then
+                part.Shape = Enum.PartType.Block
+            else
+                part.Shape = Enum.PartType.Ball
+            end
+        end
 		part.Parent = self._folder
 		self._projectiles[cue.projectileId] = { cue = cue, part = part }
 		return
@@ -494,6 +710,11 @@ function EffectPlayer:_play(cue)
 		clone.Parent = self._folder
 		Debris:AddItem(clone, def.lifetime + 0.5)
 		self:_sound(def.sound, root or clone)
+		return
+	end
+
+	-- P1-C: 기존 asset override 우선, 그다음 네 캐릭터 전용 도형 fallback.
+	if self:_playP1C(cue, def, root, col) then
 		return
 	end
 
@@ -583,9 +804,31 @@ function EffectPlayer:_step()
 			p.part:Destroy()
 			self._projectiles[id] = nil
 		else
-			p.part.Position = Vector3.new(pos.X, pos.Y, pos.Z)
-		end
-	end
+            local nextPos = Vector3.new(pos.X, pos.Y, pos.Z)
+            if p.lastPos and p.part:IsA("BasePart") then
+                local since = t - (p.lastTrailAt or -math.huge)
+                local category = p.cue.cue
+                -- 기존 서버 위치 보간에만 장식 트레일을 붙이고 실제 궤도는 유지한다.
+                if since >= 0.085 and visibleAt(nextPos, p.cue.mine, 62)
+                    and (category == "ball.projectile" or category == "sling.projectile"
+                        or string.sub(category, 1, 6) == "paint.") then
+                    local distance = (nextPos - p.lastPos).Magnitude
+                    if distance > 0.18 and distance < 8 then
+                        emitLine(self._folder, self, p.lastPos, nextPos,
+                            category == "ball.projectile" and 0.12 or 0.075,
+                            p.part.Color, 0.12, 0.32)
+                    end
+                    p.lastTrailAt = t
+                end
+            end
+            if p.part:IsA("BasePart") then p.part.Position = nextPos end
+            p.lastPos = nextPos
+        end
+    end
+    -- 종료 페인트 표시 메모리는 1초 이내 제거. ID 재사용/메모리 누수 방지.
+    for id, state in self._paintEnds do
+        if t - state.endedAt > 1 then self._paintEnds[id] = nil end
+    end
 end
 
 return EffectPlayer
