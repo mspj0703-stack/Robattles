@@ -9,31 +9,34 @@ local Hud = {}; Hud.__index=Hud
 function Hud.new(parent)
 	local root=C.new("Frame",parent,{Name="BattleHUD",Size=UDim2.fromScale(1,1),BackgroundTransparency=1})
 	local self=setmetatable({root=root,toastUntil=0,slots={}},Hud)
-	local top=C.panel(root,"Match",385,44,510,60)
-	self.top=C.text(top,"MatchText","TIME —   RANK —   KO —   PLAYERS —",12,5,486,50,20)
+	local top=C.panel(root,"Match",385,34,510,78)
+    C.new("Frame",top,{Name="TopAccent",Position=UDim2.fromOffset(15,8),Size=UDim2.fromOffset(480,3),BackgroundColor3=T.Action,BorderSizePixel=0})
+    local matchLabel=C.text(top,"Label","FREE FOR ALL   /   MATCH STATUS",12,13,486,17,12,T.Muted)
+    matchLabel.TextXAlignment=Enum.TextXAlignment.Center
+    self.top=C.text(top,"MatchText","TIME —   RANK —   KO —   PLAYERS —",12,30,486,45,19)
 	self.top.TextXAlignment=Enum.TextXAlignment.Center
 	self.phaseHint=C.text(root,"PhaseHint","",200,8,880,30,18,T.Action)
 	self.phaseHint.TextXAlignment=Enum.TextXAlignment.Center; self.phaseHint.Visible=false
-	local hp=C.panel(root,"Health",12,540,294,168)
-	self.character=C.text(hp,"Character","CONNECTING",14,6,266,28,24,T.Action)
-	self.health=C.text(hp,"HealthText","— / —",14,35,266,25,20)
-	self.bar=C.bar(hp,"HealthBar",14,66,266,17,T.Health)
-	self.dodge=C.text(hp,"Dodge","회피 —",14,91,266,24,17)
-	self.passive=C.text(hp,"Passive","서버 상태 대기",14,118,266,44,14)
+	local hp=C.panel(root,"Health",12,562,294,146)
+	self.character=C.text(hp,"Character","CONNECTING",14,8,266,28,22,T.Action)
+	self.health=C.text(hp,"HealthText","— / —",14,38,266,25,19)
+	self.bar=C.bar(hp,"HealthBar",14,65,266,16,T.Health)
+	self.dodge=C.text(hp,"Dodge","회피 —",14,84,266,24,16)
+	self.passive=C.text(hp,"Passive","서버 상태 대기",14,111,266,32,13)
 	for i,key in {"LMB","RMB","1","2","3"} do
-		local p=C.panel(root,"Slot"..i,328+(i-1)*139,613,128,95,T.Secondary)
-		local k=C.text(p,"Key",key,8,4,112,22,18,T.Action)
-		local title=C.text(p,"Skill",({"기본 공격","보조 공격","스킬 1","스킬 2","스킬 3"})[i],8,27,112,24,16)
-		local status=C.text(p,"Status","—",8,55,112,30,16)
-		local icon=C.new("ImageLabel",p,{Name="SkillIcon",Position=UDim2.fromOffset(100,5),Size=UDim2.fromOffset(20,20),BackgroundTransparency=1,Visible=false})
+		local p=C.panel(root,"Slot"..i,325+(i-1)*140,608,130,100,T.Secondary)
+		local k=C.text(p,"Key",key,9,5,111,22,18,T.Action)
+		local title=C.text(p,"Skill",({"기본 공격","보조 공격","스킬 1","스킬 2","스킬 3"})[i],9,28,112,30,15)
+		local status=C.text(p,"Status","—",9,64,112,28,17)
+		local icon=C.new("ImageLabel",p,{Name="SkillIcon",Position=UDim2.fromOffset(102,6),Size=UDim2.fromOffset(20,20),BackgroundTransparency=1,Visible=false})
 		self.slots[i]={panel=p,key=k,title=title,status=status,icon=icon}
 	end
-	local ult=C.panel(root,"Ultimate",1045,540,223,168)
-	self.ultKey=C.text(ult,"Key","[F] ULTIMATE",12,8,199,28,20,T.Action)
-	self.ultimate=C.text(ult,"Status","—",12,41,199,62,24)
-	self.ultBar=C.bar(ult,"Gauge",12,119,199,18,T.Action)
-	self.ultHint=C.text(ult,"Hint","서버 판정 기준",12,142,199,20,12,T.Muted)
-	self.ammo=C.text(root,"Ammo","",345,558,665,42,20,T.Action)
+	local ult=C.panel(root,"Ultimate",1045,562,223,146)
+	self.ultKey=C.text(ult,"Key","[F] ULTIMATE",12,10,199,27,19,T.Action)
+	self.ultimate=C.text(ult,"Status","—",12,38,199,65,22)
+	self.ultBar=C.bar(ult,"Gauge",12,111,199,15,T.Action)
+	self.ultHint=C.text(ult,"Hint","서버 판정 기준",12,126,199,17,12,T.Muted)
+	self.ammo=C.text(root,"Ammo","",325,566,688,38,19,T.Action)
 	self.ammo.TextXAlignment=Enum.TextXAlignment.Center
 	self.protect=C.text(root,"Protection","",430,485,420,35,20,T.Health)
 	self.protect.TextXAlignment=Enum.TextXAlignment.Center
@@ -44,7 +47,7 @@ function Hud.new(parent)
     self.taken.TextXAlignment=Enum.TextXAlignment.Center; self.taken.Visible=false
     self.toast=C.text(root,"Toast","",390,120,500,50,24,T.Action)
 	self.toast.TextXAlignment=Enum.TextXAlignment.Center
-	self.feed=C.text(root,"KillFeed","",965,120,300,190,17)
+	self.feed=C.text(root,"KillFeed","",956,126,307,181,17)
 	self.feed.TextYAlignment=Enum.TextYAlignment.Top
 	self.feed.TextXAlignment=Enum.TextXAlignment.Right
 	self.cross=C.text(root,"Crosshair","+",620,340,40,40,26)
@@ -103,7 +106,10 @@ function Hud:render(m,now)
 			else text="READY" end
 		end
 		if i==2 and m.parryActive then text="PARRY!" end
-		C.set(slot.status,text); slot.status.TextColor3=(text=="READY" or (i>=3 and s and s.ready)) and T.Health or T.Muted
+		C.set(slot.status,text)
+        local ready=text=="READY" or (i>=3 and s and s.ready)
+        slot.status.TextColor3=ready and T.Health or (text=="사용 불가" and T.Danger or T.Muted)
+        slot.panel.BackgroundColor3=ready and T.SurfaceRaised or T.Secondary
 	end
 	local u=m.ultimate
 	C.set(self.ultimate,u and (string.format("%d%%",math.floor(u.frac*100)).."\n"..(not u.implemented and "미구현" or u.active and (u.windup and "전조" or "발동 중") or (not m.alive or not m.canAct) and "사용 불가" or u.ready and "READY!" or "충전 중")) or "—")

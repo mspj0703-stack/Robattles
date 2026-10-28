@@ -8,9 +8,9 @@ local LABELS={CameraToggle="시점 전환",RunToggle="달리기",Dodge="회피",
 function Settings.new(settings,onChanged,onToggle,parent,preferences,onPreference)
 	local root=C.panel(parent,"Settings",205,48,870,624)
 	local self=setmetatable({root=root,settings=settings,onChanged=onChanged,onToggle=onToggle,buttons={},values={},preferences=preferences,onPreference=onPreference},Settings)
-	C.text(root,"Title","SETTINGS",24,12,680,45,32,T.Action)
+	C.text(root,"Title","SETTINGS  /  CONTROLS",24,12,680,45,30,T.Action)
 	C.button(root,"Close","닫기",738,18,100,36,function() self:setOpen(false) end)
-	self.msg=C.text(root,"Message","이 설정은 현재 접속 동안 유지됩니다.",24,65,820,34,16,T.Muted)
+	self.msg=C.text(root,"Message","개인 설정은 현재 접속 동안 유지됩니다.",24,65,820,34,16,T.Muted)
 	local list=C.scroll(root,"Options",20,110,830,486)
 	local specs={{"sensitivity","마우스 감도",0.25,2,0.25},{"scale","UI 크기",0.75,1.25,0.05},{"sfx","효과음",0,1,0.1},{"music","음악",0,1,0.1}}
 	for i,s in specs do

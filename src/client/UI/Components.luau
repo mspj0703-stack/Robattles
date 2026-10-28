@@ -9,8 +9,9 @@ function C.new(kind, parent, props)
 	return obj
 end
 function C.outline(obj, color, width)
-	C.new("UIStroke", obj, {Color = color or T.Outline, Thickness = width or 3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border})
-	C.new("UICorner", obj, {CornerRadius = UDim.new(0, 5)})
+    local stroke=C.new("UIStroke", obj, {Color=color or T.Outline, Thickness=width or 2, ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
+    C.new("UICorner", obj, {CornerRadius=UDim.new(0,8)})
+    return stroke
 end
 function C.panel(parent, name, x, y, w, h, color)
 	local f = C.new("Frame", parent, {Name = name, Position = UDim2.fromOffset(x,y), Size = UDim2.fromOffset(w,h), BackgroundColor3 = color or T.Panel, BorderSizePixel = 0})
@@ -32,8 +33,12 @@ function C.button(parent, name, text, x,y,w,h, callback, color)
 		tween = TweenService:Create(scale, TweenInfo.new(0.09), {Scale=v})
 		tween:Play()
 	end
-	b.MouseEnter:Connect(function() animate(1.025) end)
-	b.MouseLeave:Connect(function() animate(1) end)
+	b.MouseEnter:Connect(function()
+        animate(1.025)
+    end)
+    b.MouseLeave:Connect(function()
+        animate(1)
+    end)
 	b.MouseButton1Down:Connect(function() animate(0.97) end)
 	b.MouseButton1Up:Connect(function() animate(1) end)
 	b.Activated:Connect(callback)

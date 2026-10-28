@@ -29,18 +29,19 @@ function App.new(settings,onBindings)
 	local self=setmetatable({gui=gui,bounds=bounds,canvas=canvas,scale=scale,state=State.new(Players.LocalPlayer.UserId,Config.Match.RespawnSeconds),connections={},selected="SWORD",callbacks={},lastBlocking=nil},App)
 	self.hud=Hud.new(canvas)
 	self.hud:setBindings(settings.binds)
-	self.menuButton=C.button(canvas,"MenuButton","MENU · F9",12,44,164,40,function() self:open("Menu") end)
+	self.menuButton=C.button(canvas,"MenuButton","☰  MENU · F9",12,44,164,40,function() self:open("Menu") end)
 	self.menu=C.panel(canvas,"MainMenu",75,62,1130,596)
-	self.menuLogo=C.text(self.menu,"Logo","RoBattles!",36,26,610,100,76,T.Action); self.menuLogo.Font=T.Font; self.menuLogo.Rotation=-3
+	self.menuLogo=C.text(self.menu,"Logo","RoBattles!",39,32,570,96,70,T.Action); self.menuLogo.Font=T.Font; self.menuLogo.Rotation=-3
 	if T.Assets.Logo~="" then
 		self.menuLogo.Visible=false
 		C.new("ImageLabel",self.menu,{Name="LogoArt",Image=T.Assets.Logo,BackgroundTransparency=1,Position=self.menuLogo.Position,Size=self.menuLogo.Size,ScaleType=Enum.ScaleType.Fit})
 	end
-	C.text(self.menu,"Subtitle","ALPHA 1.0  /  BRICKYARD",40,136,600,40,24,T.Muted)
+	C.text(self.menu,"Subtitle","ALPHA 1.0    /    12 PLAYER FREE FOR ALL",43,141,533,38,19,T.Muted)
+    C.new("Frame",self.menu,{Name="AccentRule",Position=UDim2.fromOffset(43,187),Size=UDim2.fromOffset(493,4),BackgroundColor3=T.Action,BorderSizePixel=0})
 	Preview.safeNew(self.menu,590,198,498,346,"SWORD")
-	C.text(self.menu,"SceneNote","BLOCK ARENA · 임시 3D 장면",609,551,470,26,14,T.Muted)
+	C.text(self.menu,"SceneNote","BRICKYARD  /  7 MINUTE BATTLES",609,551,470,26,14,T.Muted)
 	for i,item in {{"PLAY","Battle"},{"CHARACTERS","Characters"},{"HOW TO PLAY","Help"},{"SETTINGS","Settings"}} do
-		C.button(self.menu,item[1],item[1],42,212+(i-1)*80,493,60,function()
+		C.button(self.menu,item[1],item[1],42,214+(i-1)*78,493,58,function()
 			-- PLAY with no server-confirmed selection sends the player to the character page instead of an empty arena.
 			if item[2]=="Battle" and (not self.state.snap or self.state:status(workspace:GetServerTimeNow())=="Menu") then
 				self:open("Characters")
@@ -49,15 +50,16 @@ function App.new(settings,onBindings)
 			else self:open(item[2]) end
 		end,i==1 and T.Action or T.Secondary).TextColor3=i==1 and T.Outline or T.Text
 	end
-	self.menuNote=C.text(self.menu,"MenuNote","메뉴를 열어도 서버 경기는 계속됩니다.",42,540,500,36,14,T.Muted)
+	self.menuNote=C.text(self.menu,"MenuNote","F9 메뉴  ·  스코어보드: "..tostring(settings.binds.Scoreboard).."  ·  메뉴 중에도 경기 진행",42,548,505,29,14,T.Muted)
 	self.characterPage=C.panel(canvas,"Characters",65,40,1150,640)
 	C.text(self.characterPage,"Title","CHOOSE YOUR FIGHTER",24,14,950,42,32,T.Action)
 	C.button(self.characterPage,"Back","닫기",1014,16,108,38,function() self:open(self.returnPage or "Menu") end)
-	C.text(self.characterPage,"SelectHint","캐릭터를 골라 전투에 참가하세요",24,55,950,24,17,T.Muted)
+	C.text(self.characterPage,"SelectHint","캐릭터를 선택하면 서버에서 출전을 준비합니다.",24,55,950,24,17,T.Muted)
 	self.characterButtons={}
 	for i,id in Catalog.Order do
-		self.characterButtons[id]=C.button(self.characterPage,id,id,22,90+(i-1)*91,240,82,function() self:selectPreview(id) end,T.Themes[id])
+		self.characterButtons[id]=C.button(self.characterPage,id,id,22,90+(i-1)*91,240,82,function() self:selectPreview(id) end,T.Secondary)
 		self.characterButtons[id].TextSize=16
+        self.characterButtons[id].TextXAlignment=Enum.TextXAlignment.Center
 	end
 	self.preview=Preview.safeNew(self.characterPage,285,82,310,315,"SWORD")
 	self.portrait=C.new("ImageLabel",self.characterPage,{Name="PortraitArt",Position=UDim2.fromOffset(285,82),Size=UDim2.fromOffset(310,315),BackgroundTransparency=1,Visible=false,ScaleType=Enum.ScaleType.Fit})
@@ -214,7 +216,7 @@ function App:selectPreview(id)
 	local allowed=Characters[id]~=nil and RemoteSpec.validate("SelectCharacter",{characterId=id})==true and not full
 	self.selectable=allowed
 	local first=matchPlayer==nil or matchPlayer.selected~=true
-	self.characterIntro.Text=id.."\n"..item.intro
+	self.characterIntro.Text=id.."  /  "..item.difficulty.."\n"..item.intro
 	self.characterInfo.Text=id.." · "..item.difficulty.."\n"..item.tag.."\nHP "..(Characters[id] and tostring(Characters[id].maxHealth) or "—").."\n"..(full and "경기 정원이 가득 찼습니다" or allowed and (first and "선택하면 서버가 스폰합니다" or "다음 리스폰부터 적용") or "현재 서버에서 선택 불가")
 	for i,l in self.skillLabels do l.Text=({"[LMB] ","[RMB] ","[1] ","[2] ","[3] ","[F] "})[i]..item.skills[i] end
 	self.passiveInfo.Text="PASSIVE\n"..item.passive
@@ -224,6 +226,10 @@ function App:selectPreview(id)
 	for cid,b in self.characterButtons do
 		local card=Catalog.Items[cid]
 		b.Text=(cid==id and "▶ " or "")..cid.."\n"..card.role.."\nHP "..tostring(Characters[cid].maxHealth).." · "..card.difficulty
+        b.BackgroundColor3=cid==id and T.Themes[cid] or T.Secondary
+        b.TextColor3=cid==id and T.Outline or T.Text
+        local border=b:FindFirstChildOfClass("UIStroke")
+        if border then border.Color=cid==id and T.Text or T.Outline end
 	end
 	self:refreshSelectionAction(workspace:GetServerTimeNow())
 end

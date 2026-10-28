@@ -1,12 +1,13 @@
 --!nonstrict
--- Presentation only. Replace asset IDs here; no gameplay values belong here.
+-- P4 presentation tokens only. No gameplay values or asset claims.
 return {
-	Panel = Color3.fromHex("182338"), Secondary = Color3.fromHex("35465E"),
-	Action = Color3.fromHex("F5C958"), Health = Color3.fromHex("54D7AA"),
-	Danger = Color3.fromHex("F16E54"), Text = Color3.fromHex("EEF4FB"),
-	Outline = Color3.fromHex("0B1220"), Muted = Color3.fromHex("A7B7CC"),
-	Themes = { SWORD = Color3.fromHex("F16E54"), PAINTBALL = Color3.fromHex("54D7AA"),
-		SUPERBALL = Color3.fromHex("64B9F5"), TIMEBOMB = Color3.fromHex("F5C958"), SLINGSHOT = Color3.fromHex("BC97F5") },
-	Assets = { Logo = "", Portraits = {}, Skills = {} },
-	Font = Enum.Font.GothamBlack, BodyFont = Enum.Font.GothamMedium,
+    Panel = Color3.fromHex("172238"), Secondary = Color3.fromHex("293A54"),
+    Surface = Color3.fromHex("202F49"), SurfaceRaised = Color3.fromHex("344A65"),
+    Action = Color3.fromHex("FFD36A"), Health = Color3.fromHex("63D6AE"),
+    Danger = Color3.fromHex("FF786A"), Text = Color3.fromHex("F1F5FC"),
+    Outline = Color3.fromHex("0A1424"), Muted = Color3.fromHex("AFC0D4"),
+    Themes = { SWORD = Color3.fromHex("FF806F"), PAINTBALL = Color3.fromHex("63D6AE"),
+        SUPERBALL = Color3.fromHex("6DC9FA"), TIMEBOMB = Color3.fromHex("FFD36A"), SLINGSHOT = Color3.fromHex("C7A5FF") },
+    Assets = { Logo = "", Portraits = {}, Skills = {} },
+    Font = Enum.Font.GothamBlack, BodyFont = Enum.Font.GothamMedium,
 }
