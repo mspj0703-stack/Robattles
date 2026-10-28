@@ -16,6 +16,9 @@
           },
           "Weapons": {
             "$className": "Folder"
+          },
+          "Sounds": {
+            "$className": "Folder"
           }
         }
       }

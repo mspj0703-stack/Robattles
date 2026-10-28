@@ -47,6 +47,9 @@ def test_no_gameplay_or_animation_source_changed():
         'tests_py/test_vfx_p1a_contract.py',
         'tests_py/test_vfx_p1d_contract.py',
         'src/client/Main.client.luau', # P1-D cosmetic lifetime reset only
+        'src/shared/Data/SfxProfiles.luau', # P2-A cosmetic sound profiles only
+        'default.project.json', 'integrated.project.json', # optional Sound asset mount
+        'tests_py/test_sfx_p2a_contract.py', 'docs/P1E_P2A_IMPLEMENTATION_REPORT.md', # P2-A regression tests
     } for x in changed), changed
     assert not any(x.startswith(('src/server/', 'src/shared/Combat/', 'src/client/CharacterAnimator', 'src/client/SwordAnimator')) for x in changed)
 
@@ -130,7 +133,9 @@ def test_p1b_effects_visual_only_and_cleanup():
 def test_p1b_scope_changed_only_vfx_and_tests():
     changed = subprocess.check_output(['git', 'diff', '--name-only', BASE], cwd=ROOT, text=True).splitlines()
     assert set(changed) <= {'src/client/EffectPlayer.luau', 'src/shared/Data/EffectCatalog.luau', 'tests_py/test_vfx_p1a_contract.py',
-        'tests_py/test_vfx_p1d_contract.py', 'src/client/Main.client.luau'}
+        'tests_py/test_vfx_p1d_contract.py', 'src/client/Main.client.luau',
+        'src/shared/Data/SfxProfiles.luau', 'default.project.json', 'integrated.project.json',
+        'tests_py/test_sfx_p2a_contract.py', 'docs/P1E_P2A_IMPLEMENTATION_REPORT.md'}
 
 # P1-C: client-only animation-independent VFX variants for four Alpha characters.
 
@@ -195,5 +200,8 @@ def test_p1c_change_scope_and_cue_contract():
         'tests_py/test_vfx_p1a_contract.py',
         'tests_py/test_vfx_p1d_contract.py',
         'src/client/Main.client.luau', # P1-D one-line visual cleanup at match reset
+        'src/shared/Data/SfxProfiles.luau', # P2-A sound-only config
+        'default.project.json', 'integrated.project.json',
+        'tests_py/test_sfx_p2a_contract.py', 'docs/P1E_P2A_IMPLEMENTATION_REPORT.md',
     }, changed
     assert MODEL.read_text() == baseline('src/client/Logic/EffectsModel.luau')

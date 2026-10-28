@@ -38,7 +38,9 @@ def test_only_one_line_in_main_from_p1c_and_combat_contract_preserved():
     assert MAIN.replace('            effects:clear() -- P1-D: remove prior-round visual projectiles/particles only\n','') == before
     changed = subprocess.check_output(['git', 'diff', '--name-only', '4fe2575'], cwd=ROOT,text=True).splitlines()
     assert set(changed) <= {'src/client/EffectPlayer.luau', 'src/client/Main.client.luau',
-                            'tests_py/test_vfx_p1a_contract.py', 'tests_py/test_vfx_p1d_contract.py'}
+                            'tests_py/test_vfx_p1a_contract.py', 'tests_py/test_vfx_p1d_contract.py',
+                            'src/shared/Data/SfxProfiles.luau', 'default.project.json',
+                            'integrated.project.json', 'tests_py/test_sfx_p2a_contract.py', 'docs/P1E_P2A_IMPLEMENTATION_REPORT.md'}
     for f in ['src/client/CharacterAnimator.luau','src/client/SwordAnimator.luau',
               'src/shared/Data/Characters.luau','src/shared/Data/EffectCatalog.luau',
               'src/client/Logic/EffectsModel.luau']:

@@ -13,6 +13,7 @@ local SoundService = game:GetService("SoundService")
 
 local Link = require(script.Parent.Link)
 local Catalog = Link.shared("Data/EffectCatalog")
+local SfxProfiles = Link.shared("Data/SfxProfiles")
 local EffectsModel = require(script.Parent.Logic.EffectsModel)
 
 local EffectPlayer = {}
@@ -23,7 +24,7 @@ local function color3(c)
 end
 
 function EffectPlayer.new(now)
-	local self = setmetatable({ _now = now, _projectiles = {}, _paintEnds = {}, _folder = nil, _quality = "high", _assetWarnings = {} }, EffectPlayer)
+	local self = setmetatable({ _now = now, _projectiles = {}, _paintEnds = {}, _folder = nil, _quality = "high", _assetWarnings = {}, _voices = {}, _lastSound = {} }, EffectPlayer)
 	local folder = workspace:FindFirstChild("RoBattlesEffects")
 	if folder then
 		folder:Destroy() -- 스크립트 재실행/재접속 시 이전 연출 잔여물 정리(중복 방지)
@@ -46,6 +47,12 @@ function EffectPlayer:clear()
     end
     table.clear(self._projectiles)
     table.clear(self._paintEnds)
+    -- P2-A: stop pending cosmetic audio on round change; never touch music or UI sounds.
+    for sound in self._voices do
+        if sound.Parent then sound:Destroy() end
+    end
+    table.clear(self._voices)
+    table.clear(self._lastSound)
 end
 
 -- P1-D quality hook for future HUD settings. Gameplay/telegraphs are never changed.
@@ -85,19 +92,69 @@ function EffectPlayer:_asset(cueName)
 	return effects and effects:FindFirstChild(cueName)
 end
 
-function EffectPlayer:_sound(soundName, parent)
-	local def = soundName and Catalog.Sounds[soundName]
-	if not def or def.id == "" or not parent then
-		return
-	end
-	local s = Instance.new("Sound")
-	s.SoundId = def.id
-	s.Volume = def.volume or 0.5
-	s.RollOffMaxDistance = 80
-	s.SoundGroup = SoundService:FindFirstChild("RoBattlesSFX") -- UI 효과음 볼륨 설정과 연동
-	s.Parent = parent
-	s:Play()
-	Debris:AddItem(s, 3)
+-- P2-A: client-only SFX routing; these sounds never affect damage or hit timing.
+-- Optional overrides: ReplicatedStorage.RoBattles.Assets.Sounds[cue name] or [catalog sound alias].
+-- A missing/invalid override uses the original built-in SoundId from EffectCatalog.
+function EffectPlayer:_sound(soundName, parent, cueName, mine)
+    if not soundName or not parent then return end
+    local fallback = Catalog.Sounds[soundName]
+    local profile = SfxProfiles.forCue(cueName, soundName)
+    local key = profile.family .. ":" .. soundName
+    local now = self._now()
+    local minimumGap = mine and 0.035 or profile.minGap
+    if now - (self._lastSound[key] or -math.huge) < minimumGap then return end
+
+    -- Avoid playing remote combat sound for distant battles, while keeping local feedback.
+    local camera = workspace.CurrentCamera
+    if not mine and camera and parent:IsA("BasePart") then
+        if (camera.CFrame.Position - parent.Position).Magnitude > profile.distance then return end
+    end
+
+    local voiceCount = 0
+    for sound in self._voices do
+        if not sound.Parent then
+            self._voices[sound] = nil
+        else
+            voiceCount += 1
+        end
+    end
+    if voiceCount >= 18 then
+        if not mine then return end
+        -- Make room for local feedback rather than letting overlapping voices grow without limit.
+        for oldVoice in self._voices do
+            oldVoice:Destroy()
+            self._voices[oldVoice] = nil
+            break
+        end
+    end
+
+    local robattles = ReplicatedStorage:FindFirstChild("RoBattles")
+    local assets = robattles and robattles:FindFirstChild("Assets")
+    local soundAssets = assets and assets:FindFirstChild("Sounds")
+    local override = soundAssets and (soundAssets:FindFirstChild(cueName or "") or soundAssets:FindFirstChild(soundName))
+    local sound
+    if override and override:IsA("Sound") and override.SoundId ~= "" then
+        sound = override:Clone()
+    elseif fallback and fallback.id and fallback.id ~= "" then
+        sound = Instance.new("Sound")
+        sound.SoundId = fallback.id
+        sound.Volume = fallback.volume or 0.5
+    else
+        return
+    end
+    sound.Name = "RoBattlesCombatSFX"
+    sound.Looped = false
+    sound.PlaybackSpeed = math.clamp(sound.PlaybackSpeed * profile.speed, 0.65, 1.5)
+    sound.Volume = math.clamp(sound.Volume * profile.gain * (mine and 1 or 0.85), 0, 1)
+    sound.RollOffMaxDistance = profile.distance
+    sound.RollOffMode = Enum.RollOffMode.Inverse
+    sound.SoundGroup = SoundService:FindFirstChild("RoBattlesSFX")
+    sound.Parent = parent
+    self._voices[sound] = true
+    self._lastSound[key] = now
+    sound.Ended:Connect(function() self._voices[sound] = nil end)
+    sound:Play()
+    Debris:AddItem(sound, 4)
 end
 
 -- Cosmetic assets: accept Model, BasePart, Attachment or a standalone ParticleEmitter.
@@ -296,7 +353,7 @@ function EffectPlayer:_hitImpact(cue, def, color)
 			self:_fade(ray, lifetime)
 		end
 	end
-	self:_sound(def.sound, target or core)
+	self:_sound(def.sound, target or core, cue.cue, cue.mine)
 end
 
 -- 전방에 휘어진 5개 선분을 짧게 그려 단일 네온 판 대신 검격 궤적을 표현한다.
@@ -334,7 +391,7 @@ function EffectPlayer:_slashArc(cue, def, root, color)
 			end
 		end
 	end
-	self:_sound(def.sound, root)
+	self:_sound(def.sound, root, cue.cue, cue.mine)
 end
 
 -- P1-B: SWORD 전용 절차적 VFX. 기존 서버 cue 와 R6 Motor6D 애니메이션은 변경하지 않는다.
@@ -391,7 +448,7 @@ function EffectPlayer:_swordArc(cue, def, root, color)
             emitLine(self._folder, self, from, to, 0.042, Color3.fromRGB(255, 255, 245), lifetime * 0.72, 0.08)
         end
     end
-    self:_sound(def.sound, root)
+    self:_sound(def.sound, root, cue.cue, cue.mine)
 end
 
 -- BladeWave: 장식 광선은 서버가 알려준 range 를 넘어서지 않는다.
@@ -409,7 +466,7 @@ function EffectPlayer:_swordWave(cue, def, root, color)
     if visibleAt(root.Position, cue.mine, 55) then
         emitLine(self._folder, self, start, endpoint, 0.055, Color3.fromRGB(240, 255, 255), life * 0.72, 0.12)
     end
-    self:_sound(def.sound, root)
+    self:_sound(def.sound, root, cue.cue, cue.mine)
 end
 
 -- 패링 시작은 방어용 전면 호, 성공/차단은 서로 다른 색과 크기의 스파크.
@@ -439,7 +496,7 @@ function EffectPlayer:_swordParry(cue, def, root, color)
                 0.09, bright, life * 0.7, 0.07)
         end
     end
-    self:_sound(def.sound, root)
+    self:_sound(def.sound, root, cue.cue, cue.mine)
 end
 
 -- 충전은 칼/오른손 부근으로 작은 에너지가 모이고, 돌진은 짧은 방향성 선 잔상만 만든다.
@@ -473,7 +530,7 @@ function EffectPlayer:_swordLunge(cue, def, root, color)
             end
         end
     end
-    self:_sound(def.sound, root)
+    self:_sound(def.sound, root, cue.cue, cue.mine)
 end
 
 -- Blade Storm 은 시작 방어호 → 반복 회전 섬광 → 마지막 강타로 단계를 구분한다.
@@ -494,7 +551,7 @@ function EffectPlayer:_swordStorm(cue, def, root, color)
         local to = center + Vector3.new(math.cos(b) * size, math.sin(b * 1.7) * 0.35, math.sin(b) * size)
         emitLine(self._folder, self, from, to, 0.09, color, life, 0.24)
     end
-    self:_sound(def.sound, root)
+    self:_sound(def.sound, root, cue.cue, cue.mine)
 end
 
 function EffectPlayer:_swordAccent(cue, def, root, color)
@@ -512,7 +569,7 @@ function EffectPlayer:_swordAccent(cue, def, root, color)
             point + up * 1.0 + dir * (cue.cue == "skill.storm.finish" and 1.5 or 0.8),
             0.09, color, life * 0.75, 0.12)
     end
-    self:_sound(def.sound, root or target)
+    self:_sound(def.sound, root or target, cue.cue, cue.mine)
 end
 
 -- 명중/패링 성공 cue 를 서버 이벤트로부터 받은 뒤에만 표시한다.
@@ -537,14 +594,14 @@ function EffectPlayer:_playSword(cue, def, root, color)
 end
 
 -- 월드 좌표에서 재생되는 폭발/반사음은 캐릭터 루트가 없어도 들리게 한다.
-function EffectPlayer:_p1cSound(soundName, root, point)
+function EffectPlayer:_p1cSound(soundName, root, point, cueName, mine)
     if not soundName then return end
     if root then
-        self:_sound(soundName, root)
+        self:_sound(soundName, root, cueName, mine)
     elseif point then
         local anchor = ghostPart(Vector3.one * 0.1, CFrame.new(point), Color3.new(1, 1, 1), 1)
         anchor.Parent = self._folder
-        self:_sound(soundName, anchor)
+        self:_sound(soundName, anchor, cueName, mine)
         Debris:AddItem(anchor, 3.1)
     end
 end
@@ -729,7 +786,7 @@ function EffectPlayer:_playP1C(cue, def, root, color)
     else
         return false
     end
-    self:_p1cSound(def.sound, root, pointFor(cue, root, 1.5))
+    self:_p1cSound(def.sound, root, pointFor(cue, root, 1.5), cue.cue, cue.mine)
     return true
 end
 
@@ -764,7 +821,7 @@ function EffectPlayer:_burst(cue, def, fallbackRoot, color)
 			end
 		end
 	end
-	self:_sound(def.sound, target or fallbackRoot or core)
+	self:_sound(def.sound, target or fallbackRoot or core, cue.cue, cue.mine)
 end
 
 -- 큐 하나를 재생한다. 반환값 없음.
@@ -849,7 +906,7 @@ function EffectPlayer:_play(cue)
             if not hasSound then
                 local soundParent = placed:IsA("BasePart") and placed
                     or placed:FindFirstChildWhichIsA("BasePart", true) or root
-                self:_sound(def.sound, soundParent)
+                self:_sound(def.sound, soundParent, cue.cue, cue.mine)
             end
             return
         end
@@ -885,7 +942,7 @@ function EffectPlayer:_play(cue)
 		part.Size = Vector3.new(0.2, def.size, def.size)
 		part.Parent = self._folder
 		self:_fade(part, def.lifetime, Vector3.new(0.2, def.size * 2, def.size * 2))
-		self:_sound(def.sound, root)
+		self:_sound(def.sound, root, cue.cue, cue.mine)
 	elseif name == "hit.impact" then
 		-- 서버 Damaged 이벤트에서만 생성되는 별형 타격 효과.
 		self:_hitImpact(cue, def, col)
@@ -898,7 +955,7 @@ function EffectPlayer:_play(cue)
 			part.Shape = Enum.PartType.Ball
 			part.Parent = self._folder
 			self:_fade(part, def.lifetime, Vector3.one * def.size * 0.3)
-			self:_sound(def.sound, root or part)
+			self:_sound(def.sound, root or part, cue.cue, cue.mine)
 		end
 	elseif def.style == "Beam" and cue.origin and cue.tip then
 		-- 빔 한 틱: 서버가 확정한 시작~끝 선분을 얇은 네온 막대로 그린다(시각 전용)
@@ -909,7 +966,7 @@ function EffectPlayer:_play(cue)
 			local part = ghostPart(Vector3.new(def.size, def.size, len), CFrame.lookAt(a, b) * CFrame.new(0, 0, -len / 2), col, 0.2)
 			part.Parent = self._folder
 			self:_fade(part, def.lifetime)
-			self:_sound(def.sound, part)
+			self:_sound(def.sound, part, cue.cue, cue.mine)
 		end
 	elseif def.style == "Splat" and cue.pos then
 		local part = ghostPart(Vector3.new(def.size, 0.1, def.size), CFrame.new(cue.pos.X, cue.pos.Y, cue.pos.Z), col, 0.1)
@@ -927,7 +984,7 @@ function EffectPlayer:_play(cue)
 			part.Parent = self._folder
 			self:_fade(part, def.lifetime * (1 - (i - 1) / (#pts + 1)))
 		end
-		self:_sound(def.sound, root)
+		self:_sound(def.sound, root, cue.cue, cue.mine)
 	end
 end
 
