@@ -12,6 +12,7 @@ function Settings.new(settings,onChanged,onToggle,parent,preferences,onPreferenc
 	C.button(root,"Close","닫기",738,18,100,36,function() self:setOpen(false) end)
 	self.msg=C.text(root,"Message","개인 설정은 현재 접속 동안 유지됩니다.",24,65,820,34,16,T.Muted)
 	local list=C.scroll(root,"Options",20,110,830,486)
+	self.list=list
 	local specs={{"sensitivity","마우스 감도",0.25,2,0.25},{"scale","UI 크기",0.75,1.25,0.05},{"sfx","효과음",0,1,0.1},{"music","음악",0,1,0.1}}
 	for i,s in specs do
 		local y=(i-1)*48
@@ -66,4 +67,41 @@ function Settings:handleInput(obj)
 	if ok and self.onChanged then self.onChanged(self.settings.binds) end
 	self:refresh(); return true
 end
+function Settings:applyLayout(profile)
+    if profile=="portrait" then
+        local title=self.root:FindFirstChild("Title")
+        title.Position=UDim2.fromOffset(18,18); title.Size=UDim2.fromOffset(485,48)
+        local close=self.root:FindFirstChild("Close")
+        close.Position=UDim2.fromOffset(558,20); close.Size=UDim2.fromOffset(110,45)
+        self.msg.Position=UDim2.fromOffset(20,75)
+        self.msg.Size=UDim2.fromOffset(635,39)
+        self.list.Position=UDim2.fromOffset(15,124)
+        self.list.Size=UDim2.fromOffset(660,860)
+        for i,key in {"sensitivity","scale","sfx","music"} do
+            local obj=self.list:FindFirstChild(key.."Label")
+            obj.Size=UDim2.fromOffset(290,40)
+            local value=self.values[key]
+            value.Position=UDim2.fromOffset(428,(i-1)*48)
+            value.Size=UDim2.fromOffset(90,40)
+            local minus=self.list:FindFirstChild(key.."Minus")
+            minus.Position=UDim2.fromOffset(350,(i-1)*48+3)
+            local plus=self.list:FindFirstChild(key.."Plus")
+            plus.Position=UDim2.fromOffset(552,(i-1)*48+3)
+            plus.Size=UDim2.fromOffset(74,34)
+        end
+        for i,key in {"damageNumbers","shake"} do
+            local value=self.values[key]
+            value.Position=UDim2.fromOffset(440,196+(i-1)*48+3)
+            value.Size=UDim2.fromOffset(183,34)
+        end
+        for _,name in {"AudioNote","KeyHeader","Bottom"} do
+            self.list:FindFirstChild(name).Size=UDim2.fromOffset(625,name=="Bottom" and 44 or 34)
+        end
+        for _,button in self.buttons do button.Size=UDim2.fromOffset(619,36) end
+    elseif profile=="compact" then
+        self.list.Position=UDim2.fromOffset(20,99)
+        self.list.Size=UDim2.fromOffset(865,434)
+    end
+end
+
 return Settings

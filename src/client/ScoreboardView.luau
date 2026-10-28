@@ -43,4 +43,37 @@ function Board:setRows(rows)
 	end
 end
 function Board:setVisible(v) self.root.Visible=v end
+-- Display only; ranks and KO remain read directly from server rows.
+function Board:applyLayout(profile)
+    if profile=="portrait" then
+        self.root.Position=UDim2.fromOffset(13,72)
+        self.root.Size=UDim2.fromOffset(694,976)
+        self.title.Position=UDim2.fromOffset(22,15)
+        self.title.Size=UDim2.fromOffset(645,44)
+        local heading=self.root:FindFirstChild("Head")
+        heading.Position=UDim2.fromOffset(22,60)
+        heading.Size=UDim2.fromOffset(650,27)
+        heading.Text="RANK      PLAYER                                  KO    DEATHS"
+        heading.TextSize=14
+        self.list.Position=UDim2.fromOffset(15,95)
+        self.list.Size=UDim2.fromOffset(664,855)
+    elseif profile=="compact" then
+        self.root.Position=UDim2.fromOffset(162,12)
+        self.root.Size=UDim2.fromOffset(700,552)
+        self.list.Position=UDim2.fromOffset(13,92)
+        self.list.Size=UDim2.fromOffset(674,445)
+    end
+    if profile=="portrait" or profile=="compact" then
+        for _,cell in self.cells do
+            cell.root.Size=UDim2.fromOffset(profile=="portrait" and 648 or 670,ROW_H)
+            cell.name.Position=UDim2.fromOffset(70,0)
+            cell.name.Size=UDim2.fromOffset(profile=="portrait" and 344 or 388,ROW_H)
+            cell.kills.Position=UDim2.fromOffset(profile=="portrait" and 445 or 484,0)
+            cell.deaths.Position=UDim2.fromOffset(profile=="portrait" and 545 or 578,0)
+            cell.kills.Size=UDim2.fromOffset(70,ROW_H)
+            cell.deaths.Size=UDim2.fromOffset(78,ROW_H)
+        end
+    end
+end
+
 return Board

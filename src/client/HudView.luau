@@ -168,4 +168,83 @@ function Hud:clearTransient()
 	self.hit.Visible=false; self.damage.Visible=false; self.toast.Visible=false
     self.ko.Visible=false; self.taken.Visible=false; self.root.Position=UDim2.new()
 end
+-- Two small-screen profiles adjust geometry only; authority and input bindings stay unchanged.
+function Hud:applyLayout(profile)
+    if profile=="portrait" then
+        self.root:FindFirstChild("Match").Position=UDim2.fromOffset(182,23)
+        self.root:FindFirstChild("Match").Size=UDim2.fromOffset(526,88)
+        self.root:FindFirstChild("Match"):FindFirstChild("TopAccent").Size=UDim2.fromOffset(498,3)
+        self.phaseHint.Position=UDim2.fromOffset(115,124)
+        self.phaseHint.Size=UDim2.fromOffset(490,42)
+        local hp=self.root:FindFirstChild("Health")
+        hp.Position=UDim2.fromOffset(14,896); hp.Size=UDim2.fromOffset(402,164)
+        for _,name in {"Character","HealthText","Dodge","Passive"} do
+            local obj=hp:FindFirstChild(name)
+            if obj then obj.Size=UDim2.fromOffset(366,obj.Size.Y.Offset) end
+        end
+        hp:FindFirstChild("HealthBar").Position=UDim2.fromOffset(14,65)
+        hp:FindFirstChild("HealthBar").Size=UDim2.fromOffset(366,16)
+        local ult=self.root:FindFirstChild("Ultimate")
+        ult.Position=UDim2.fromOffset(430,896); ult.Size=UDim2.fromOffset(275,164)
+        for _,name in {"Key","Status","Gauge","Hint"} do
+            local obj=ult:FindFirstChild(name)
+            if obj then obj.Size=UDim2.fromOffset(247,obj.Size.Y.Offset) end
+        end
+        for i,slot in self.slots do
+            local x=12+(i-1)*141
+            slot.panel.Position=UDim2.fromOffset(x,1075)
+            slot.panel.Size=UDim2.fromOffset(132,92)
+            slot.title.TextSize=14
+            slot.status.TextSize=17
+            slot.status.Position=UDim2.fromOffset(9,60)
+            slot.status.Size=UDim2.fromOffset(114,27)
+        end
+        self.ammo.Position=UDim2.fromOffset(100,849); self.ammo.Size=UDim2.fromOffset(520,36)
+        self.protect.Position=UDim2.fromOffset(150,802); self.protect.Size=UDim2.fromOffset(420,35)
+        self.ko.Position=UDim2.fromOffset(170,222); self.ko.Size=UDim2.fromOffset(380,55)
+        self.taken.Position=UDim2.fromOffset(220,674); self.taken.Size=UDim2.fromOffset(280,35)
+        self.toast.Position=UDim2.fromOffset(102,151); self.toast.Size=UDim2.fromOffset(516,55)
+        self.feed.Position=UDim2.fromOffset(374,294); self.feed.Size=UDim2.fromOffset(328,190)
+        self.cross.Position=UDim2.fromOffset(340,565)
+        self.hit.Position=UDim2.fromOffset(338,563)
+        self.damage.Position=UDim2.fromOffset(386,533)
+    elseif profile=="compact" then
+        self.root:FindFirstChild("Match").Position=UDim2.fromOffset(258,7)
+        self.phaseHint.Position=UDim2.fromOffset(195,3)
+        self.phaseHint.Size=UDim2.fromOffset(630,30)
+        local hp=self.root:FindFirstChild("Health")
+        hp.Position=UDim2.fromOffset(9,420); hp.Size=UDim2.fromOffset(232,146)
+        for _,name in {"Character","HealthText","Dodge","Passive"} do
+            local obj=hp:FindFirstChild(name)
+            if obj then obj.Size=UDim2.fromOffset(205,obj.Size.Y.Offset) end
+        end
+        hp:FindFirstChild("HealthBar").Size=UDim2.fromOffset(205,16)
+        for i,slot in self.slots do
+            slot.panel.Position=UDim2.fromOffset(248+(i-1)*116,470)
+            slot.panel.Size=UDim2.fromOffset(109,94)
+            slot.key.TextSize=16
+            slot.title.Size=UDim2.fromOffset(91,30); slot.title.TextSize=13
+            slot.status.Position=UDim2.fromOffset(9,60)
+            slot.status.Size=UDim2.fromOffset(91,28); slot.status.TextSize=15
+        end
+        local ult=self.root:FindFirstChild("Ultimate")
+        ult.Position=UDim2.fromOffset(832,420); ult.Size=UDim2.fromOffset(182,146)
+        for _,name in {"Key","Status","Gauge","Hint"} do
+            local obj=ult:FindFirstChild(name)
+            if obj then obj.Size=UDim2.fromOffset(156,obj.Size.Y.Offset) end
+        end
+        self.ultKey.TextSize=16; self.ultimate.TextSize=20
+        self.ammo.Position=UDim2.fromOffset(248,427); self.ammo.Size=UDim2.fromOffset(566,32)
+        self.protect.Position=UDim2.fromOffset(306,380)
+        self.ko.Position=UDim2.fromOffset(322,112)
+        self.taken.Position=UDim2.fromOffset(370,308)
+        self.toast.Position=UDim2.fromOffset(260,90)
+        self.feed.Position=UDim2.fromOffset(756,102); self.feed.Size=UDim2.fromOffset(247,165)
+        self.feed.TextSize=14
+        self.cross.Position=UDim2.fromOffset(492,268)
+        self.hit.Position=UDim2.fromOffset(490,266)
+        self.damage.Position=UDim2.fromOffset(536,239)
+    end
+end
+
 return Hud

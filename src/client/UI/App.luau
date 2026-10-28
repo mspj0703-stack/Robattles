@@ -12,6 +12,7 @@ local T=require(script.Parent.Tokens)
 local Catalog=require(script.Parent.Catalog)
 local Preview=require(script.Parent.Preview)
 local State=require(script.Parent.State)
+local Responsive=require(script.Parent.Responsive)
 local Hud=require(script.Parent.Parent.HudView)
 local Board=require(script.Parent.Parent.ScoreboardView)
 local Settings=require(script.Parent.Parent.SettingsView)
@@ -22,7 +23,9 @@ function App.new(settings,onBindings)
 	for _,name in {"RoBattlesHud","RoBattlesScoreboard","RoBattlesSettings"} do
 		local old=pg:FindFirstChild(name); if old then old:Destroy() end
 	end
-	local gui=C.new("ScreenGui",pg,{Name="RoBattlesUI",ResetOnSpawn=false,IgnoreGuiInset=true,DisplayOrder=20,ZIndexBehavior=Enum.ZIndexBehavior.Sibling})
+	local gui=C.new("ScreenGui",pg,{Name="RoBattlesUI",ResetOnSpawn=false,IgnoreGuiInset=false,DisplayOrder=20,ZIndexBehavior=Enum.ZIndexBehavior.Sibling})
+	-- Honor phone notch, platform topbar and device safe areas when supported.
+	pcall(function() gui.ScreenInsets=Enum.ScreenInsets.DeviceSafeInsets end)
 	local bounds=C.new("Frame",gui,{Name="Bounds",Size=UDim2.fromScale(1,1),BackgroundTransparency=1})
 	local canvas=C.new("Frame",bounds,{Name="Canvas",AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(1280,720),BackgroundTransparency=1})
 	local scale=C.new("UIScale",canvas,{Scale=1})
@@ -38,7 +41,7 @@ function App.new(settings,onBindings)
 	end
 	C.text(self.menu,"Subtitle","ALPHA 1.0    /    12 PLAYER FREE FOR ALL",43,141,533,38,19,T.Muted)
     C.new("Frame",self.menu,{Name="AccentRule",Position=UDim2.fromOffset(43,187),Size=UDim2.fromOffset(493,4),BackgroundColor3=T.Action,BorderSizePixel=0})
-	Preview.safeNew(self.menu,590,198,498,346,"SWORD")
+	self.menuPreview=Preview.safeNew(self.menu,590,198,498,346,"SWORD")
 	C.text(self.menu,"SceneNote","BRICKYARD  /  7 MINUTE BATTLES",609,551,470,26,14,T.Muted)
 	for i,item in {{"PLAY","Battle"},{"CHARACTERS","Characters"},{"HOW TO PLAY","Help"},{"SETTINGS","Settings"}} do
 		C.button(self.menu,item[1],item[1],42,214+(i-1)*78,493,58,function()
@@ -113,11 +116,129 @@ function App.new(settings,onBindings)
 		if not group then group=C.new("SoundGroup",SoundService,{Name=name}) end
 	end
 	self:applyPreference("sfx",self.state.preferences.sfx); self:applyPreference("music",self.state.preferences.music)
+	self.baseGeometry={}
+	for _,obj in self.canvas:GetDescendants() do
+		if obj:IsA("GuiObject") then
+			self.baseGeometry[obj]={position=obj.Position,size=obj.Size,textSize=(obj:IsA("TextLabel") or obj:IsA("TextButton")) and obj.TextSize or nil}
+		end
+	end
 	self:resize(); self:updateVisibility(); return self
 end
+-- Restore original desktop layout before applying a new breakpoint. UI data/state is untouched.
+function App:restoreGeometry()
+    for obj,original in self.baseGeometry do
+        if obj.Parent then
+            obj.Position=original.position
+            obj.Size=original.size
+            if original.textSize then obj.TextSize=original.textSize end
+        end
+    end
+end
+local function place(obj,x,y,w,h)
+    Responsive.place(obj,x,y,w,h)
+end
+local function tweak(obj,x,y,w,h,size)
+    if not obj then return end
+    place(obj,x,y,w,h)
+    if size and (obj:IsA("TextLabel") or obj:IsA("TextButton")) then obj.TextSize=size end
+end
+local function resizePreview(host,w,h)
+    for _,child in host:GetChildren() do
+        if child:IsA("GuiObject") then child.Size=UDim2.fromOffset(w,h) end
+    end
+end
+function App:layoutCompact()
+    place(self.menu,20,12,984,552)
+    tweak(self.menuLogo,35,30,470,85,56)
+    tweak(self.menuNote,35,510,520,28,13)
+    place(self.menuPreview.root,556,152,390,290)
+    resizePreview(self.menuPreview.root,390,290)
+    for i,name in {"PLAY","CHARACTERS","HOW TO PLAY","SETTINGS"} do
+        tweak(self.menu:FindFirstChild(name),35,193+(i-1)*72,468,56)
+    end
+    tweak(self.menu:FindFirstChild("SceneNote"),555,467,400,24)
+    place(self.characterPage,12,10,1000,556)
+    local back=self.characterPage:FindFirstChild("Back")
+    tweak(back,866,12,110,38)
+    tweak(self.characterPage:FindFirstChild("Title"),24,14,830,43,30)
+    tweak(self.characterPage:FindFirstChild("SelectHint"),24,58,915,26,16)
+    for i,id in Catalog.Order do
+        tweak(self.characterButtons[id],20,100+(i-1)*86,203,76,14)
+    end
+    place(self.preview.root,238,100,237,248); resizePreview(self.preview.root,237,248)
+    tweak(self.portrait,238,100,237,248)
+    tweak(self.characterInfo,238,354,237,121,15)
+    place(self.characterPage:FindFirstChild("Details"),489,100,491,379)
+    tweak(self.selectButton,490,485,489,54,18)
+    tweak(self.selectionStatus,238,482,236,64,13)
+    tweak(self.characterPage:FindFirstChild("DifficultyNote"),20,526,215,20,11)
+    place(self.help,85,12,854,552)
+    place(self.settings.root,52,12,920,552)
+    self.settings:applyLayout("compact")
+    place(self.death,262,150,500,275)
+    self.board:applyLayout("compact")
+    self.resultBoard:applyLayout("compact")
+    tweak(self.resultNext,230,535,570,28,17)
+    place(self.connection,272,12,480,44)
+    tweak(self.menuButton,12,90,155,42,18)
+    self.hud:applyLayout("compact")
+end
+function App:layoutPortrait()
+    place(self.menu,25,92,670,965)
+    tweak(self.menuLogo,34,38,590,92,65)
+    tweak(self.menu:FindFirstChild("Subtitle"),34,137,600,42,17)
+    tweak(self.menu:FindFirstChild("AccentRule"),34,184,590,4)
+    place(self.menuPreview.root,155,205,360,265); resizePreview(self.menuPreview.root,360,265)
+    tweak(self.menu:FindFirstChild("SceneNote"),45,477,580,29,17)
+    for i,name in {"PLAY","CHARACTERS","HOW TO PLAY","SETTINGS"} do
+        tweak(self.menu:FindFirstChild(name),54,532+(i-1)*91,562,70,23)
+    end
+    tweak(self.menuNote,38,904,592,42,15)
+    place(self.characterPage,12,42,696,1096)
+    tweak(self.characterPage:FindFirstChild("Title"),18,15,525,46,30)
+    tweak(self.characterPage:FindFirstChild("Back"),555,17,117,48,19)
+    tweak(self.characterPage:FindFirstChild("SelectHint"),20,69,642,30,17)
+    for i,id in Catalog.Order do
+        local index=i-1
+        tweak(self.characterButtons[id],18+(index%2)*337,106+math.floor(index/2)*91,320,78,18)
+    end
+    place(self.preview.root,23,394,258,240); resizePreview(self.preview.root,258,240)
+    tweak(self.portrait,23,394,258,240)
+    tweak(self.characterInfo,300,394,368,234,18)
+    place(self.characterPage:FindFirstChild("Details"),20,650,655,306)
+    for i,label in self.skillLabels do tweak(label,10,80+(i-1)*63,616,58,18) end
+    tweak(self.characterIntro,10,0,616,72,19)
+    tweak(self.passiveInfo,10,463,616,105,18)
+    tweak(self.characterPage:FindFirstChild("DifficultyNote"),20,966,350,44,15)
+    tweak(self.selectionStatus,22,1019,308,56,15)
+    tweak(self.selectButton,345,1010,327,64,20)
+    place(self.help,15,108,690,934)
+    tweak(self.help:FindFirstChild("Title"),22,18,512,58,33)
+    tweak(self.help:FindFirstChild("Close"),555,22,110,48,19)
+    tweak(self.helpText,22,90,645,782,19)
+    place(self.settings.root,15,68,690,1010)
+    self.settings:applyLayout("portrait")
+    place(self.death,100,400,520,300)
+    self.board:applyLayout("portrait")
+    self.resultBoard:applyLayout("portrait")
+    tweak(self.resultNext,85,1080,550,42,19)
+    place(self.connection,110,135,500,54)
+    tweak(self.menuButton,12,25,160,54,19)
+    self.hud:applyLayout("portrait")
+end
 function App:resize()
-	local size=self.bounds.AbsoluteSize
-	self.scale.Scale=State.fit(size.X,size.Y,self.state.preferences.scale)
+    local size=self.bounds.AbsoluteSize
+    if size.X <= 0 or size.Y <= 0 then return end
+    local profile=Responsive.choose(size.X,size.Y)
+    if self.layoutProfile~=profile then
+        self:restoreGeometry()
+        local reference=Responsive.References[profile]
+        self.canvas.Size=UDim2.fromOffset(reference.X,reference.Y)
+        if profile=="compact" then self:layoutCompact()
+        elseif profile=="portrait" then self:layoutPortrait() end
+        self.layoutProfile=profile
+    end
+    self.scale.Scale=Responsive.fit(size.X,size.Y,self.state.preferences.scale,profile)
 end
 function App:applyPreference(key,value)
 	if key=="shake" and not value then self.hud.shakeUntil=nil
