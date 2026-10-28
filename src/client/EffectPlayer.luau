@@ -199,6 +199,205 @@ function EffectPlayer:_slashArc(cue, def, root, color)
 	self:_sound(def.sound, root)
 end
 
+-- P1-B: SWORD 전용 절차적 VFX. 기존 서버 cue 와 R6 Motor6D 애니메이션은 변경하지 않는다.
+-- 공격 모션과 정확한 프레임 일치는 Studio 검증 전까지 보장하지 않으며, 여기서는 짧고 안전한 장식만 표시한다.
+local SWORD_ARC_VARIANTS = {
+    ["sword.slash3"] = { direction = 1, tilt = -0.17, power = 1.08 },
+    ["skill.triple1"] = { direction = 1, tilt = 0.10, power = 1.0 },
+    ["skill.triple2"] = { direction = -1, tilt = -0.14, power = 1.0 },
+    ["skill.triple3"] = { direction = 1, tilt = -0.24, power = 1.15 },
+}
+
+local function emitLine(folder, owner, a, b, width, color, life, transparency)
+    local line = sparkSegment(a, b, width, color, transparency or 0.12)
+    if line then
+        line.Parent = folder
+        owner:_fade(line, life)
+    end
+end
+
+local function swordHand(root)
+    local character = root.Parent
+    local arm = character and (character:FindFirstChild("Right Arm") or character:FindFirstChild("RightHand"))
+    if arm and arm:IsA("BasePart") then
+        return arm.Position
+    end
+    return root.CFrame:PointToWorldSpace(Vector3.new(1.0, 0.6, -0.6))
+end
+
+-- 1/2타는 역방향, 마무리는 길고 높은 호를 그린다. 판정용 부품은 만들지 않는다.
+function EffectPlayer:_swordArc(cue, def, root, color)
+    if not visibleAt(root.Position, cue.mine, 110) then return end
+    local variant = SWORD_ARC_VARIANTS[cue.cue]
+    if cue.cue == "sword.slash" then
+        variant = (cue.step == 2) and { direction = -1, tilt = -0.10, power = 1.0 }
+            or { direction = 1, tilt = 0.07, power = 1.0 }
+    end
+    if not variant then return end
+    local near = visibleAt(root.Position, cue.mine, 55)
+    local n = near and 6 or 3
+    local radius = math.clamp(def.size * 0.32 * variant.power, 1.6, 3.9)
+    local lifetime = math.min(def.lifetime, 0.3)
+    local function pointAt(u)
+        local ang = variant.direction * u
+        local x = math.sin(ang) * radius
+        local y = 0.7 + math.cos(ang) * radius * 0.28 + x * variant.tilt
+        return root.CFrame:PointToWorldSpace(Vector3.new(x, y, -1.9))
+    end
+    for i = 1, n do
+        local a = -1.0 + 2 * (i - 1) / n
+        local b = -1.0 + 2 * i / n
+        local from, to = pointAt(a), pointAt(b)
+        emitLine(self._folder, self, from, to, 0.12, color, lifetime, 0.2)
+        if near then
+            emitLine(self._folder, self, from, to, 0.042, Color3.fromRGB(255, 255, 245), lifetime * 0.72, 0.08)
+        end
+    end
+    self:_sound(def.sound, root)
+end
+
+-- BladeWave: 장식 광선은 서버가 알려준 range 를 넘어서지 않는다.
+-- 공격 판정용 가짜 반경이나 명중 섬광은 만들지 않는다.
+function EffectPlayer:_swordWave(cue, def, root, color)
+    if not visibleAt(root.Position, cue.mine, 110) then return end
+    local reach = (type(cue.range) == "number" and cue.range > 0) and math.min(cue.range, 14) or 5
+    local start = root.CFrame:PointToWorldSpace(Vector3.new(0, 0.85, -1.2))
+    local forward = root.CFrame.LookVector
+    local right = root.CFrame.RightVector
+    local endpoint = start + forward * math.max(0.5, reach - 1.2)
+    local life = math.min(def.lifetime, 0.32)
+    emitLine(self._folder, self, start - right * 0.7, endpoint - right * 0.85, 0.09, color, life, 0.18)
+    emitLine(self._folder, self, start + right * 0.7, endpoint + right * 0.85, 0.09, color, life, 0.18)
+    if visibleAt(root.Position, cue.mine, 55) then
+        emitLine(self._folder, self, start, endpoint, 0.055, Color3.fromRGB(240, 255, 255), life * 0.72, 0.12)
+    end
+    self:_sound(def.sound, root)
+end
+
+-- 패링 시작은 방어용 전면 호, 성공/차단은 서로 다른 색과 크기의 스파크.
+-- 연출은 상태효과를 만들지 않는다.
+function EffectPlayer:_swordParry(cue, def, root, color)
+    if not visibleAt(root.Position, cue.mine, 105) then return end
+    local near = visibleAt(root.Position, cue.mine, 55)
+    local center = root.CFrame:PointToWorldSpace(Vector3.new(0, 0.75, -1.6))
+    local right, up = root.CFrame.RightVector, Vector3.yAxis
+    local life = math.min(def.lifetime, 0.34)
+    if cue.cue == "parry.start" then
+        local segments = near and 6 or 3
+        for i = 1, segments do
+            local a = -1.2 + 2.4 * (i - 1) / segments
+            local b = -1.2 + 2.4 * i / segments
+            local function pointAt(t)
+                return center + right * (math.sin(t) * 1.08) + up * (math.cos(t) * 1.2 - 0.2)
+            end
+            emitLine(self._folder, self, pointAt(a), pointAt(b), 0.085, color, life, 0.18)
+        end
+    else
+        local bright = cue.cue == "parry.success" and Color3.fromRGB(255, 247, 197) or color
+        for i = 1, (near and 6 or 3) do
+            local a = i * math.pi / 3
+            local dir = right * math.cos(a) + up * math.sin(a)
+            emitLine(self._folder, self, center + dir * 0.18, center + dir * 0.85,
+                0.09, bright, life * 0.7, 0.07)
+        end
+    end
+    self:_sound(def.sound, root)
+end
+
+-- 충전은 칼/오른손 부근으로 작은 에너지가 모이고, 돌진은 짧은 방향성 선 잔상만 만든다.
+function EffectPlayer:_swordLunge(cue, def, root, color)
+    if not visibleAt(root.Position, cue.mine, 110) then return end
+    local life = math.min(def.lifetime, 0.42)
+    if cue.cue == "skill.lunge.charge" then
+        local hand = swordHand(root)
+        for i = 1, 4 do
+            local ang = (i - 1) * math.pi / 2
+            local dir = root.CFrame.RightVector * math.cos(ang) + Vector3.yAxis * math.sin(ang)
+            emitLine(self._folder, self, hand + dir * 0.78, hand + dir * 0.13,
+                0.065, color, life, 0.15)
+        end
+    else
+        local direction = root.CFrame.LookVector
+        if type(cue.dir) == "table" and type(cue.dir.X) == "number" and type(cue.dir.Z) == "number" then
+            local v = Vector3.new(cue.dir.X, 0, cue.dir.Z)
+            if v.Magnitude > 0.01 then direction = v.Unit end
+        end
+        local distance = math.clamp(type(cue.distance) == "number" and cue.distance or 0, 0, 14)
+        local sampleCount = visibleAt(root.Position, cue.mine, 55) and 4 or 2
+        for i = 1, sampleCount do
+            local t = (i - 1) / math.max(sampleCount - 1, 1)
+            local pos = root.Position + direction * distance * t
+            for j = -1, 1, 2 do
+                local side = root.CFrame.RightVector * (j * 0.52)
+                emitLine(self._folder, self, pos + side + Vector3.yAxis * 1.4,
+                    pos + side - direction * 1.0 + Vector3.yAxis * 0.55,
+                    0.07, color, life * (0.8 - t * 0.3), 0.3)
+            end
+        end
+    end
+    self:_sound(def.sound, root)
+end
+
+-- Blade Storm 은 시작 방어호 → 반복 회전 섬광 → 마지막 강타로 단계를 구분한다.
+function EffectPlayer:_swordStorm(cue, def, root, color)
+    if not visibleAt(root.Position, cue.mine, 110) then return end
+    local isStart = cue.cue == "skill.storm.start"
+    local near = visibleAt(root.Position, cue.mine, 55)
+    local n = near and 6 or 3
+    local size = isStart and 1.7 or 2.5
+    local index = type(cue.index) == "number" and cue.index or 0
+    local angleShift = isStart and 0 or (index % 4) * math.pi / 4
+    local center = root.Position + Vector3.yAxis * 0.65
+    local life = math.min(def.lifetime, isStart and 0.38 or 0.21)
+    for i = 1, n do
+        local a = angleShift + 2 * math.pi * (i - 1) / n
+        local b = angleShift + 2 * math.pi * i / n
+        local from = center + Vector3.new(math.cos(a) * size, math.sin(a * 1.7) * 0.35, math.sin(a) * size)
+        local to = center + Vector3.new(math.cos(b) * size, math.sin(b * 1.7) * 0.35, math.sin(b) * size)
+        emitLine(self._folder, self, from, to, 0.09, color, life, 0.24)
+    end
+    self:_sound(def.sound, root)
+end
+
+function EffectPlayer:_swordAccent(cue, def, root, color)
+    local target = cue.targetId and rootOf(cue.targetId)
+    local point = target and target.Position or (root and root.Position)
+    if not point or not visibleAt(point, cue.mine, 100) then return end
+    local near = visibleAt(point, cue.mine, 55)
+    local right = root and root.CFrame.RightVector or Vector3.xAxis
+    local up = Vector3.yAxis
+    local life = math.min(def.lifetime, 0.38)
+    for i = 1, (near and 6 or 3) do
+        local a = (i - 1) * math.pi / 3
+        local dir = right * math.cos(a) + up * math.sin(a)
+        emitLine(self._folder, self, point + up * 1.0 + dir * 0.18,
+            point + up * 1.0 + dir * (cue.cue == "skill.storm.finish" and 1.5 or 0.8),
+            0.09, color, life * 0.75, 0.12)
+    end
+    self:_sound(def.sound, root or target)
+end
+
+-- 명중/패링 성공 cue 를 서버 이벤트로부터 받은 뒤에만 표시한다.
+function EffectPlayer:_playSword(cue, def, root, color)
+    local name = cue.cue
+    if (name == "sword.slash" or name == "sword.slash3" or string.match(name, "^skill%.triple[123]$")) and root then
+        self:_swordArc(cue, def, root, color)
+    elseif name == "skill.bladewave" and root then
+        self:_swordWave(cue, def, root, color)
+    elseif (name == "parry.start" or name == "parry.success" or name == "parry.blocked") and root then
+        self:_swordParry(cue, def, root, color)
+    elseif (name == "skill.lunge.charge" or name == "skill.lunge.dash") and root then
+        self:_swordLunge(cue, def, root, color)
+    elseif (name == "skill.storm.start" or name == "skill.storm.tick") and root then
+        self:_swordStorm(cue, def, root, color)
+    elseif (name == "skill.storm.finish" or name == "duelist.proc") then
+        self:_swordAccent(cue, def, root, color)
+    else
+        return false
+    end
+    return true
+end
+
 -- 폭발/강타의 기존 거대 사각/구형 도형을 작은 섬광 + 짧은 파편으로 대체한다.
 -- radius 가 전달된 폭발은 서버가 알려준 반경 안에서만 보여야 한다.
 function EffectPlayer:_burst(cue, def, fallbackRoot, color)
@@ -295,6 +494,11 @@ function EffectPlayer:_play(cue)
 		clone.Parent = self._folder
 		Debris:AddItem(clone, def.lifetime + 0.5)
 		self:_sound(def.sound, root or clone)
+		return
+	end
+
+	-- P1-B 특화 연출이 존재하는 SWORD cue 만 우선 처리 (자산 override 가 있으면 override 우선).
+	if self:_playSword(cue, def, root, col) then
 		return
 	end
 

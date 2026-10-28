@@ -74,3 +74,57 @@ def test_legacy_remote_contract_untouched():
     path = 'src/shared/Data/RemoteSpec.luau'
     if (ROOT / path).exists():
         assert (ROOT / path).read_text() == baseline(path)
+
+# P1-B SWORD specialization source-scope checks. Studio-only visual result is not asserted.
+def test_p1b_sword_effect_cues_remain_same_as_p1a():
+    from subprocess import check_output
+    previous = check_output(['git', 'show', '9585841:src/shared/Data/EffectCatalog.luau'], cwd=ROOT, text=True)
+    assert CATALOG.read_text() == previous
+    assert MODEL.read_text() == baseline('src/client/Logic/EffectsModel.luau')
+
+
+def test_p1b_distinct_sword_attack_variants():
+    b = PLAYER.read_text()
+    assert 'SWORD_ARC_VARIANTS' in b
+    for cue in ('sword.slash3', 'skill.triple1', 'skill.triple2', 'skill.triple3'):
+        assert f'["{cue}"]' in b
+    assert 'cue.step == 2' in b  # second basic slash reverses direction
+    assert 'self:_swordArc(cue, def, root, color)' in b
+    assert 'self:_slashArc(cue, def, root, col)' in b  # unchanged fallback
+
+
+def test_p1b_parry_and_lunge_differentiated():
+    b = PLAYER.read_text()
+    assert 'function EffectPlayer:_swordParry' in b
+    assert 'name == "parry.start" or name == "parry.success" or name == "parry.blocked"' in b
+    assert 'function EffectPlayer:_swordLunge' in b
+    assert 'swordHand(root)' in b
+    assert 'self:_swordLunge(cue, def, root, color)' in b
+    assert 'if type(cue.dir) == "table"' in b
+    assert 'distance = math.clamp' in b
+
+
+def test_p1b_wave_and_storm_phase_specific():
+    b = PLAYER.read_text()
+    assert 'function EffectPlayer:_swordWave' in b
+    assert 'math.min(cue.range, 14)' in b
+    assert 'function EffectPlayer:_swordStorm' in b
+    assert 'index % 4' in b
+    assert 'skill.storm.finish' in b and 'duelist.proc' in b
+
+
+def test_p1b_effects_visual_only_and_cleanup():
+    b = PLAYER.read_text()
+    assert 'function EffectPlayer:_playSword' in b
+    assert 'if self:_playSword(cue, def, root, col) then' in b
+    assert b.index('if override and def.style ~= "Highlight" then') < b.index('if self:_playSword(cue, def, root, col) then')
+    assert 'emitLine(self._folder, self,' in b
+    assert 'line.Parent = folder' in b
+    assert 'owner:_fade(line, life)' in b
+    for tok in ('p.CanCollide = false', 'p.CanTouch = false', 'p.CanQuery = false', 'Debris:AddItem(part, lifetime + 0.1)'):
+        assert tok in b
+
+
+def test_p1b_scope_changed_only_vfx_and_tests():
+    changed = subprocess.check_output(['git', 'diff', '--name-only', BASE], cwd=ROOT, text=True).splitlines()
+    assert set(changed) <= {'src/client/EffectPlayer.luau', 'src/shared/Data/EffectCatalog.luau', 'tests_py/test_vfx_p1a_contract.py'}
